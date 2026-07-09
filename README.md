@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ECHO
 
-## Getting Started
+AI-powered Emergency Coordination Hub built for the Snowflake CoCo CLI Hackathon 2026.
 
-First, run the development server:
+ECHO helps incident commanders transform fragmented emergency data into coordinated, explainable, and actionable response plans.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Problem
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Emergency teams do not lack data. They lack coordinated intelligence.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+During a crisis, information is scattered across weather systems, maps, hospitals, reports, and communication channels. This slows down decision-making and increases operational risk.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Solution
 
-## Learn More
+ECHO provides an AI-native mission control workspace that helps teams:
 
-To learn more about Next.js, take a look at the following resources:
+- Monitor active incidents
+- Analyze emergency context
+- Coordinate specialist AI agents
+- Simulate response scenarios
+- Generate explainable recommendations
+- Produce executive reports
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Tech Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Next.js
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Snowflake Cortex
+- CoCo CLI
 
-## Deploy on Vercel
+## Current Status
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Initial mission control dashboard MVP is in progress.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Core Features
+
+- Mission Control Dashboard
+- Incident Timeline
+- Live Map Panel
+- AI Commander
+- Decision Simulation
+- Executive Recommendation
+
+## Project Goal
+
+Build a production-style AI-native emergency decision platform for the Snowflake CoCo CLI Hackathon 2026.
