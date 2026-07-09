@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 const scenarios = [
   {
     name: "Scenario A",
@@ -5,10 +9,9 @@ const scenarios = [
     risk: "Medium",
     eta: "30 min",
     resources: "18 units",
-    confidence: "94%",
+    confidence: 94,
     recommended: true,
-    color: "border-emerald-500/40 bg-emerald-500/5",
-    bar: "w-[94%] bg-emerald-400",
+    bar: "bg-emerald-400",
   },
   {
     name: "Scenario B",
@@ -16,10 +19,9 @@ const scenarios = [
     risk: "High",
     eta: "20 min",
     resources: "12 units",
-    confidence: "82%",
+    confidence: 82,
     recommended: false,
-    color: "border-slate-800 bg-[#1A2438]",
-    bar: "w-[82%] bg-amber-400",
+    bar: "bg-amber-400",
   },
   {
     name: "Scenario C",
@@ -27,14 +29,23 @@ const scenarios = [
     risk: "Low",
     eta: "45 min",
     resources: "25 units",
-    confidence: "91%",
+    confidence: 91,
     recommended: false,
-    color: "border-slate-800 bg-[#1A2438]",
-    bar: "w-[91%] bg-cyan-400",
+    bar: "bg-cyan-400",
   },
 ];
 
 export function DecisionSimulation() {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress((current) => (current >= 100 ? 0 : current + 5));
+    }, 120);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <section className="rounded-2xl border border-slate-800 bg-[#131C2E] p-6">
       <div className="flex items-start justify-between">
@@ -48,15 +59,26 @@ export function DecisionSimulation() {
         </div>
 
         <span className="rounded-full border border-violet-500/30 bg-violet-500/15 px-3 py-1 text-xs font-semibold text-violet-300">
-          Simulation Ready
+          {progress < 100 ? "Simulating" : "Simulation Ready"}
         </span>
+      </div>
+
+      <div className="mt-4 h-1.5 rounded-full bg-slate-800">
+        <div
+          className="h-1.5 rounded-full bg-violet-400 transition-all duration-150"
+          style={{ width: `${progress}%` }}
+        />
       </div>
 
       <div className="mt-5 grid grid-cols-3 gap-4">
         {scenarios.map((scenario) => (
           <div
             key={scenario.name}
-            className={`rounded-2xl border p-4 ${scenario.color}`}
+            className={`rounded-2xl border p-4 ${
+              scenario.recommended
+                ? "border-emerald-500/40 bg-emerald-500/5"
+                : "border-slate-800 bg-[#1A2438]"
+            }`}
           >
             <div className="flex items-start justify-between">
               <div>
@@ -94,12 +116,15 @@ export function DecisionSimulation() {
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-500">Confidence</span>
                 <span className="font-semibold text-slate-200">
-                  {scenario.confidence}
+                  {scenario.confidence}%
                 </span>
               </div>
 
               <div className="mt-2 h-2 rounded-full bg-slate-800">
-                <div className={`h-2 rounded-full ${scenario.bar}`} />
+                <div
+                  className={`h-2 rounded-full ${scenario.bar}`}
+                  style={{ width: `${scenario.confidence}%` }}
+                />
               </div>
             </div>
           </div>

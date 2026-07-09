@@ -1,11 +1,15 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+"use client";
+
+import { useEffect, useState } from "react";
 import {
   Bot,
   CheckCircle2,
   CloudSun,
   Hospital,
+  Loader2,
   Route,
   ShieldAlert,
-  Loader2,
 } from "lucide-react";
 
 const agents = [
@@ -13,33 +17,45 @@ const agents = [
     icon: CloudSun,
     name: "Weather Agent",
     detail: "Wind shift detected NW",
-    status: "Complete",
-    active: false,
   },
   {
     icon: Hospital,
     name: "Medical Agent",
     detail: "3 hospitals on standby",
-    status: "Complete",
-    active: false,
   },
   {
     icon: Route,
     name: "Infrastructure Agent",
     detail: "Evaluating evacuation routes",
-    status: "Running",
-    active: true,
   },
   {
     icon: ShieldAlert,
     name: "Risk Agent",
     detail: "Calculating exposure score",
-    status: "Running",
-    active: true,
   },
 ];
 
-export function AICommander() {
+type AICommanderProps = {
+  isSimulationRunning: boolean;
+};
+
+export function AICommander({ isSimulationRunning }: AICommanderProps) {
+  const [completed, setCompleted] = useState(1);
+
+  useEffect(() => {
+    if (!isSimulationRunning) return;
+
+    setCompleted(0);
+
+    const interval = setInterval(() => {
+      setCompleted((current) =>
+        current >= agents.length ? agents.length : current + 1
+      );
+    }, 1400);
+
+    return () => clearInterval(interval);
+  }, [isSimulationRunning]);
+
   return (
     <section className="rounded-2xl border border-cyan-500/20 bg-[#131C2E] p-6 shadow-[0_0_40px_rgba(6,182,212,0.06)]">
       <div className="flex items-start justify-between">
@@ -70,8 +86,10 @@ export function AICommander() {
       </div>
 
       <div className="mt-5 space-y-3">
-        {agents.map((agent) => {
+        {agents.map((agent, index) => {
           const Icon = agent.icon;
+          const isComplete = index < completed;
+          const isRunning = index === completed;
 
           return (
             <div
@@ -85,14 +103,16 @@ export function AICommander() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-white">{agent.name}</p>
                 <p className="truncate text-xs text-slate-400">
-                  {agent.detail}
+                  {isComplete ? agent.detail : isRunning ? "Processing..." : "Waiting"}
                 </p>
               </div>
 
-              {agent.active ? (
+              {isComplete ? (
+                <CheckCircle2 size={16} className="text-emerald-300" />
+              ) : isRunning ? (
                 <Loader2 size={16} className="animate-spin text-amber-300" />
               ) : (
-                <CheckCircle2 size={16} className="text-emerald-300" />
+                <span className="h-2 w-2 rounded-full bg-slate-600" />
               )}
             </div>
           );

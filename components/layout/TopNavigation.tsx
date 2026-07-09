@@ -1,6 +1,14 @@
-import { Bell, Clock, Search } from "lucide-react";
+import { Bell, Clock, Play, Search } from "lucide-react";
 
-export function TopNavigation() {
+type TopNavigationProps = {
+  isSimulationRunning: boolean;
+  onStartSimulation: () => void;
+};
+
+export function TopNavigation({
+  isSimulationRunning,
+  onStartSimulation,
+}: TopNavigationProps) {
   return (
     <header className="flex h-16 items-center justify-between border-b border-slate-800 bg-[#131C2E] px-6">
       <div>
@@ -8,7 +16,7 @@ export function TopNavigation() {
         <p className="text-xs text-slate-400">Emergency Coordination Hub</p>
       </div>
 
-      <div className="relative w-[520px]">
+      <div className="relative w-[460px]">
         <Search
           size={16}
           className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
@@ -19,8 +27,16 @@ export function TopNavigation() {
         />
       </div>
 
-      <div className="flex items-center gap-5 text-sm text-slate-300">
-        <div className="flex items-center gap-2 text-slate-400">
+      <div className="flex items-center gap-4 text-sm text-slate-300">
+        <button
+          onClick={onStartSimulation}
+          className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+        >
+          <Play size={15} />
+          {isSimulationRunning ? "Restart Simulation" : "Start Simulation"}
+        </button>
+
+        <div className="hidden items-center gap-2 text-slate-400 xl:flex">
           <Clock size={16} />
           <span>09:45 ACST</span>
         </div>
@@ -29,14 +45,8 @@ export function TopNavigation() {
           <Bell size={16} />
         </button>
 
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-            AH
-          </div>
-          <div className="hidden xl:block">
-            <p className="text-sm font-medium text-white">Incident Commander</p>
-            <p className="text-xs text-slate-500">South Australia SES</p>
-          </div>
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+          AH
         </div>
       </div>
     </header>

@@ -2,7 +2,11 @@ import { Flame, Hospital, Home, Layers, Route, Shield } from "lucide-react";
 
 const layers = ["Fire Zone", "Hospitals", "Shelters", "Routes"];
 
-export function MapPanel() {
+type MapPanelProps = {
+  isSimulationRunning: boolean;
+};
+
+export function MapPanel({ isSimulationRunning }: MapPanelProps) {
   return (
     <section className="relative overflow-hidden rounded-2xl border border-slate-800 bg-[#131C2E]">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.18),transparent_38%),linear-gradient(135deg,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:100%_100%,32px_32px]" />
@@ -60,7 +64,11 @@ export function MapPanel() {
 
           <div className="absolute bottom-5 right-5 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-200">
             <Route size={14} />
-            Evacuation route analysis running
+            {
+              isSimulationRunning
+              ? "Evacuation route analysis running"
+              : "Waiting for incident signal"
+            }
           </div>
         </div>
       </div>
