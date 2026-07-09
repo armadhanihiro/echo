@@ -35,7 +35,11 @@ const scenarios = [
   },
 ];
 
-export function DecisionSimulation() {
+type DecisionSimulationProps = {
+  isSimulationRunning: boolean;
+};
+
+export function DecisionSimulation({ isSimulationRunning }: DecisionSimulationProps) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
