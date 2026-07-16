@@ -1,43 +1,41 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { incidents } from "@/data/incidents";
-import { Clock, Radio } from "lucide-react";
-import { useEffect, useState } from "react";
+import { incidentEvents } from "@/data/incident-events";
+import type { IncidentStage } from "@/lib/incident-engine";
+import { Radio } from "lucide-react";
 
 type TimelineProps = {
-  isSimulationRunning: boolean;
+  stage: IncidentStage;
 };
 
-export function Timeline({ isSimulationRunning }: TimelineProps) {
-  const [visibleCount, setVisibleCount] = useState(1);
+const stageOrder: IncidentStage[] = [
+  "idle",
+  "incident",
+  "weather",
+  "medical",
+  "traffic",
+  "simulation",
+  "decision",
+  "completed",
+];
 
-  useEffect(() => {
-    if (!isSimulationRunning) {
-      setVisibleCount(1);
-      return;
-    }
+export function Timeline({ stage }: TimelineProps) {
+  const currentStageIndex = stageOrder.indexOf(stage);
 
-    const interval = setInterval(() => {
-      setVisibleCount((current) =>
-        current >= incidents.length ? incidents.length : current + 1
-      );
-    }, 1400);
-
-    return () => clearInterval(interval);
-  }, [isSimulationRunning]);
-
-  const visibleIncidents = incidents.slice(0, visibleCount);
+  const visibleEvents = incidentEvents.filter(
+    (event) => stageOrder.indexOf(event.stage) <= currentStageIndex,
+  );
 
   return (
     <section className="rounded-2xl border border-slate-800 bg-[#131C2E] p-6">
       <div className="mb-5 flex items-start justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-            Live Incidents
+            Incident Timeline
           </p>
+
           <h2 className="mt-2 text-xl font-semibold text-white">
-            {visibleCount} Active
+            Adelaide Hills Bushfire
           </h2>
         </div>
 
@@ -46,48 +44,58 @@ export function Timeline({ isSimulationRunning }: TimelineProps) {
         </div>
       </div>
 
-      <div className="space-y-3">
-        {visibleIncidents.map((incident) => {
-          const Icon = incident.icon;
+      {visibleEvents.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-700 bg-[#1A2438]/40 p-5 text-sm text-slate-500">
+          Waiting for incident signal.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {visibleEvents.map((event, index) => {
+            const Icon = event.icon;
+            const isLatest = index === visibleEvents.length - 1;
 
-          return (
-            <div
-              key={incident.title}
-              className="rounded-xl border border-slate-800 bg-[#1A2438] p-4 transition-all duration-300"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex gap-3">
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 ${incident.color}`}
-                  >
-                    <Icon size={18} />
-                  </div>
+            return (
+              <div key={event.title} className="relative flex gap-3">
+                {index < visibleEvents.length - 1 && (
+                  <div className="absolute left-5 top-10 h-[calc(100%+16px)] w-px bg-slate-800" />
+                )}
 
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">
-                      {incident.title}
-                    </h3>
-                    <p className="mt-1 text-xs text-slate-400">
-                      {incident.location}
-                    </p>
-                  </div>
+                <div
+                  className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-[#0B1220] ${
+                    isLatest
+                      ? "border-cyan-500/40 shadow-[0_0_20px_rgba(34,211,238,0.12)]"
+                      : "border-slate-800"
+                  } ${event.iconColor}`}
+                >
+                  <Icon size={17} />
                 </div>
 
-                <span
-                  className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase ${incident.badge}`}
-                >
-                  {incident.level}
-                </span>
-              </div>
+                <div className="min-w-0 flex-1 rounded-xl border border-slate-800 bg-[#1A2438] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-semibold text-white">
+                      {event.title}
+                    </h3>
 
-              <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
-                <Clock size={13} />
-                <span>{incident.time} ACST</span>
+                    <span className="text-xs text-slate-500">
+                      {event.time} ACST
+                    </span>
+                  </div>
+
+                  <p className="mt-2 text-xs leading-5 text-slate-400">
+                    {event.description}
+                  </p>
+
+                  {isLatest && stage !== "completed" && (
+                    <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300">
+                      Latest update
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

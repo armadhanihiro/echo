@@ -1,14 +1,13 @@
 import { Bell, Clock, Play, Search } from "lucide-react";
+import type { IncidentStage } from "@/lib/incident-engine";
 
 type TopNavigationProps = {
-  isSimulationRunning: boolean;
-  onStartSimulation: () => void;
+  stage: IncidentStage;
+  isRunning: boolean;
+  onStartIncident: () => void;
 };
 
-export function TopNavigation({
-  isSimulationRunning,
-  onStartSimulation,
-}: TopNavigationProps) {
+export function TopNavigation({ stage, isRunning, onStartIncident }: TopNavigationProps) {
   return (
     <header className="flex h-16 items-center justify-between border-b border-slate-800 bg-[#131C2E] px-6">
       <div>
@@ -28,12 +27,16 @@ export function TopNavigation({
       </div>
 
       <div className="flex items-center gap-4 text-sm text-slate-300">
+        <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-medium capitalize text-cyan-300">
+          {stage}
+        </span>
+
         <button
-          onClick={onStartSimulation}
+          onClick={onStartIncident}
           className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
         >
           <Play size={15} />
-          {isSimulationRunning ? "Restart Simulation" : "Start Simulation"}
+          {isRunning ? "Restart Incident" : "Start Incident"}
         </button>
 
         <div className="hidden items-center gap-2 text-slate-400 xl:flex">

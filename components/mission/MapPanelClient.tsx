@@ -3,9 +3,10 @@
 import { Flame, Home, Hospital, Layers, Route, Users, Wind } from "lucide-react";
 import { Circle, MapContainer, Marker, Popup, Polyline, TileLayer } from "react-leaflet";
 import L from "leaflet";
+import type { IncidentStage } from "@/lib/incident-engine";
 
 type MapPanelProps = {
-  isSimulationRunning: boolean;
+  stage: IncidentStage;
 };
 
 const center: [number, number] = [-34.919, 138.707];
@@ -59,7 +60,20 @@ const stats = [
   },
 ];
 
-export function MapPanelClient({ isSimulationRunning }: MapPanelProps) {
+export function MapPanelClient({ stage }: MapPanelProps) {
+  const hasIncident = stage !== "idle";
+
+  const isRouteVisible =
+    stage === "traffic" ||
+    stage === "simulation" ||
+    stage === "decision" ||
+    stage === "completed";
+
+  const isDecisionReady =
+    stage === "decision" || stage === "completed";
+
+  const fireRadius = stage === "idle" ? 1800 : stage === "incident" ? 2800 : stage === "weather" ? 3800 : stage === "medical" ? 4400 : 5400;
+
   return (
     <section className="relative overflow-hidden rounded-2xl border border-slate-800 bg-[#131C2E]">
       <div className="flex h-full flex-col p-6">
@@ -128,16 +142,16 @@ export function MapPanelClient({ isSimulationRunning }: MapPanelProps) {
 
             <Circle
               center={center}
-              radius={isSimulationRunning ? 5400 : 3200}
+              radius={fireRadius}
               pathOptions={{
                 color: "#ef4444",
                 fillColor: "#ef4444",
-                fillOpacity: isSimulationRunning ? 0.24 : 0.14,
+                fillOpacity: hasIncident ? 0.24 : 0.08,
                 weight: 2,
               }}
             />
 
-            {isSimulationRunning && (
+            {isRouteVisible  && (
               <Polyline
                 positions={route}
                 pathOptions={{
@@ -199,9 +213,15 @@ export function MapPanelClient({ isSimulationRunning }: MapPanelProps) {
 
           <div className="absolute bottom-5 right-5 z-[500] flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-200 backdrop-blur">
             <Route size={14} />
-            {isSimulationRunning
+            {
+              isDecisionReady
               ? "Optimal route found · ETA 31 min"
-              : "Monitoring conditions"}
+              : isRouteVisible
+                ? "Evacuation route analysis running"
+                : hasIncident
+                  ? "Monitoring incident conditions"
+                  : "Waiting for incident signal"
+            }
           </div>
         </div>
       </div>
