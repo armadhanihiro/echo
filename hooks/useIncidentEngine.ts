@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {
-  incidentFlow,
-  type IncidentStage,
-} from "@/lib/incident-engine";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createIncidentState } from "@/data/incident-state";
+import { incidentFlow, type IncidentStage } from "@/lib/incident-engine";
 
 const STAGE_DURATION_MS = 2200;
 
@@ -16,7 +14,10 @@ export function useIncidentEngine() {
   useEffect(() => {
     if (runId === 0) return;
 
-    timersRef.current.forEach((timer) => window.clearTimeout(timer));
+    timersRef.current.forEach((timer) => {
+      window.clearTimeout(timer);
+    });
+
     timersRef.current = [];
 
     incidentFlow.slice(1).forEach((nextStage, index) => {
@@ -28,25 +29,35 @@ export function useIncidentEngine() {
     });
 
     return () => {
-      timersRef.current.forEach((timer) => window.clearTimeout(timer));
+      timersRef.current.forEach((timer) => {
+        window.clearTimeout(timer);
+      });
+
       timersRef.current = [];
     };
   }, [runId]);
 
   function startIncident() {
-    timersRef.current.forEach((timer) => window.clearTimeout(timer));
+    timersRef.current.forEach((timer) => {
+      window.clearTimeout(timer);
+    });
+
     timersRef.current = [];
 
     setStage("idle");
     setRunId((current) => current + 1);
   }
 
-  const isRunning =
-    stage !== "idle" &&
-    stage !== "completed";
+  const incidentState = useMemo(
+    () => createIncidentState(stage),
+    [stage],
+  );
+
+  const isRunning = stage !== "idle" && stage !== "completed";
 
   return {
     stage,
+    incidentState,
     isRunning,
     startIncident,
   };

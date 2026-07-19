@@ -3,10 +3,12 @@
 import { Flame, Home, Hospital, Layers, Route, Users, Wind } from "lucide-react";
 import { Circle, MapContainer, Marker, Popup, Polyline, TileLayer } from "react-leaflet";
 import L from "leaflet";
-import type { IncidentStage } from "@/lib/incident-engine";
 
 type MapPanelProps = {
-  stage: IncidentStage;
+  fireRadius: number;
+  routeVisible: boolean;
+  mapStatus: string;
+  decisionReady: boolean;
 };
 
 const center: [number, number] = [-34.919, 138.707];
@@ -60,22 +62,11 @@ const stats = [
   },
 ];
 
-export function MapPanelClient({ stage }: MapPanelProps) {
-  const hasIncident = stage !== "idle";
-
-  const isRouteVisible =
-    stage === "traffic" ||
-    stage === "simulation" ||
-    stage === "decision" ||
-    stage === "completed";
-
-  const isDecisionReady =
-    stage === "decision" || stage === "completed";
-
-  const fireRadius = stage === "idle" ? 1800 : stage === "incident" ? 2800 : stage === "weather" ? 3800 : stage === "medical" ? 4400 : 5400;
+export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionReady }: MapPanelProps) {
+  const hasIncident = fireRadius > 1800;
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-slate-800 bg-[#131C2E]">
+    <section className="relative self-start overflow-hidden rounded-2xl border border-slate-800 bg-[#131C2E]">
       <div className="flex h-full flex-col p-6">
         <div className="mb-5 flex items-start justify-between">
           <div>
@@ -123,7 +114,7 @@ export function MapPanelClient({ stage }: MapPanelProps) {
           })}
         </div>
 
-        <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-800 bg-[#0B1220]">
+        <div className="relative h-[520px] overflow-hidden rounded-2xl border border-slate-800 bg-[#0B1220]">
           <MapContainer
             center={center}
             zoom={11}
@@ -151,7 +142,7 @@ export function MapPanelClient({ stage }: MapPanelProps) {
               }}
             />
 
-            {isRouteVisible  && (
+            {routeVisible  && (
               <Polyline
                 positions={route}
                 pathOptions={{
@@ -211,17 +202,15 @@ export function MapPanelClient({ stage }: MapPanelProps) {
             </div>
           </div>
 
-          <div className="absolute bottom-5 right-5 z-[500] flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-200 backdrop-blur">
+          <div className={`absolute bottom-5 right-5 z-[500] flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium backdrop-blur ${
+              decisionReady
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                : routeVisible
+                  ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
+                  : "border-slate-700 bg-[#131C2E]/90 text-slate-300"
+          }`}>
             <Route size={14} />
-            {
-              isDecisionReady
-              ? "Optimal route found · ETA 31 min"
-              : isRouteVisible
-                ? "Evacuation route analysis running"
-                : hasIncident
-                  ? "Monitoring incident conditions"
-                  : "Waiting for incident signal"
-            }
+            {mapStatus}
           </div>
         </div>
       </div>

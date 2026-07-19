@@ -1,31 +1,39 @@
 "use client";
 
-import { incidentEvents } from "@/data/incident-events";
-import type { IncidentStage } from "@/lib/incident-engine";
-import { Radio } from "lucide-react";
+import type { TimelineEvent } from "@/types/incident";
+import {
+  Activity,
+  CloudSun,
+  Flame,
+  Hospital,
+  Radio,
+  Route,
+  ShieldCheck,
+} from "lucide-react";
 
 type TimelineProps = {
-  stage: IncidentStage;
+  events: TimelineEvent[];
 };
 
-const stageOrder: IncidentStage[] = [
-  "idle",
-  "incident",
-  "weather",
-  "medical",
-  "traffic",
-  "simulation",
-  "decision",
-  "completed",
-];
+const iconByStage = {
+  incident: Flame,
+  weather: CloudSun,
+  medical: Hospital,
+  traffic: Route,
+  simulation: Activity,
+  decision: ShieldCheck,
+} as const;
 
-export function Timeline({ stage }: TimelineProps) {
-  const currentStageIndex = stageOrder.indexOf(stage);
+const colorByStage = {
+  incident: "text-red-300",
+  weather: "text-cyan-300",
+  medical: "text-blue-300",
+  traffic: "text-amber-300",
+  simulation: "text-violet-300",
+  decision: "text-emerald-300",
+} as const;
 
-  const visibleEvents = incidentEvents.filter(
-    (event) => stageOrder.indexOf(event.stage) <= currentStageIndex,
-  );
-
+export function Timeline({ events }: TimelineProps) {
   return (
     <section className="rounded-2xl border border-slate-800 bg-[#131C2E] p-6">
       <div className="mb-5 flex items-start justify-between">
@@ -44,19 +52,25 @@ export function Timeline({ stage }: TimelineProps) {
         </div>
       </div>
 
-      {visibleEvents.length === 0 ? (
+      {events.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-700 bg-[#1A2438]/40 p-5 text-sm text-slate-500">
           Waiting for incident signal.
         </div>
       ) : (
         <div className="space-y-4">
-          {visibleEvents.map((event, index) => {
-            const Icon = event.icon;
-            const isLatest = index === visibleEvents.length - 1;
+          {events.map((event, index) => {
+            const Icon =
+              iconByStage[event.stage as keyof typeof iconByStage] ?? Radio;
+
+            const iconColor =
+              colorByStage[event.stage as keyof typeof colorByStage] ??
+              "text-slate-300";
+
+            const isLatest = index === events.length - 1;
 
             return (
-              <div key={event.title} className="relative flex gap-3">
-                {index < visibleEvents.length - 1 && (
+              <div key={event.id} className="relative flex gap-3">
+                {index < events.length - 1 && (
                   <div className="absolute left-5 top-10 h-[calc(100%+16px)] w-px bg-slate-800" />
                 )}
 
@@ -65,7 +79,7 @@ export function Timeline({ stage }: TimelineProps) {
                     isLatest
                       ? "border-cyan-500/40 shadow-[0_0_20px_rgba(34,211,238,0.12)]"
                       : "border-slate-800"
-                  } ${event.iconColor}`}
+                  } ${iconColor}`}
                 >
                   <Icon size={17} />
                 </div>
@@ -85,11 +99,13 @@ export function Timeline({ stage }: TimelineProps) {
                     {event.description}
                   </p>
 
-                  {isLatest && stage !== "completed" && (
-                    <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300">
-                      Latest update
-                    </p>
-                  )}
+                  {
+                    isLatest && (
+                      <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300">
+                        Latest update
+                      </p>
+                    )
+                  }
                 </div>
               </div>
             );

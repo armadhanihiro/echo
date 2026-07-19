@@ -1,6 +1,9 @@
 "use client";
 
-import type { IncidentStage } from "@/lib/incident-engine";
+import type {
+  DecisionEvidence,
+  DecisionMetric,
+} from "@/types/incident";
 import {
   CheckCircle2,
   Gauge,
@@ -10,30 +13,29 @@ import {
 } from "lucide-react";
 
 type DecisionIntelligenceProps = {
-  stage: IncidentStage;
+  decisionReady: boolean;
+  progress: number;
+  metrics: DecisionMetric[];
+  evidence: DecisionEvidence[];
+  recommendedAction: string;
 };
 
-const metrics = [
-  { label: "Safety", value: 97, color: "bg-emerald-400" },
-  { label: "Response Time", value: 86, color: "bg-cyan-400" },
-  { label: "Resource Fit", value: 91, color: "bg-blue-400" },
-  { label: "Operational Risk", value: 28, color: "bg-amber-400" },
-];
+const iconByTone = {
+  emerald: ShieldCheck,
+  cyan: Timer,
+  blue: Truck,
+  amber: Gauge,
+} as const;
 
-export function DecisionIntelligence({ stage }: DecisionIntelligenceProps) {
-  const isReady = stage === "decision" || stage === "completed";
+const colorByTone = {
+  emerald: "text-emerald-300",
+  cyan: "text-cyan-300",
+  blue: "text-blue-300",
+  amber: "text-amber-300",
+} as const;
 
-  const isAnalysing =
-    stage === "weather" ||
-    stage === "medical" ||
-    stage === "traffic" ||
-    stage === "simulation";
-
-  const statusLabel = isReady
-    ? "Decision Ready"
-    : isAnalysing
-      ? "Analysing"
-      : "Waiting";
+export function DecisionIntelligence({ decisionReady, progress, metrics, evidence, recommendedAction }: DecisionIntelligenceProps) {
+  const isAnalysing = progress > 0 && !decisionReady;
 
   return (
     <section className="rounded-2xl border border-slate-800 bg-[#131C2E] p-6">
@@ -50,14 +52,18 @@ export function DecisionIntelligence({ stage }: DecisionIntelligenceProps) {
 
         <span
           className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-            isReady
+            decisionReady
               ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-300"
               : isAnalysing
                 ? "border-cyan-500/30 bg-cyan-500/15 text-cyan-300"
                 : "border-slate-700 bg-slate-800/60 text-slate-400"
           }`}
         >
-          {statusLabel}
+          {decisionReady
+            ? "Decision Ready"
+            : isAnalysing
+              ? "Analysing"
+              : "Waiting"}
         </span>
       </div>
 
@@ -67,7 +73,7 @@ export function DecisionIntelligence({ stage }: DecisionIntelligenceProps) {
             Scenario A: Immediate Evacuation
           </p>
 
-          {!isReady ? (
+          {!decisionReady ? (
             <div className="mt-5 rounded-xl border border-dashed border-slate-700 p-5 text-sm text-slate-500">
               {isAnalysing
                 ? "Evaluating safety, response time, resource fit, and operational risk."
@@ -78,7 +84,9 @@ export function DecisionIntelligence({ stage }: DecisionIntelligenceProps) {
               {metrics.map((metric) => (
                 <div key={metric.label}>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">{metric.label}</span>
+                    <span className="text-slate-400">
+                      {metric.label}
+                    </span>
 
                     <span className="font-semibold text-slate-200">
                       {metric.value}%
@@ -102,7 +110,7 @@ export function DecisionIntelligence({ stage }: DecisionIntelligenceProps) {
             Decision Evidence
           </p>
 
-          {!isReady ? (
+          {!decisionReady ? (
             <div className="mt-5 rounded-xl border border-dashed border-slate-700 p-5 text-sm text-slate-500">
               {isAnalysing
                 ? "Evidence is being collected from weather, medical, infrastructure, and risk agents."
@@ -111,45 +119,20 @@ export function DecisionIntelligence({ stage }: DecisionIntelligenceProps) {
           ) : (
             <>
               <div className="mt-4 space-y-3 text-sm text-slate-300">
-                <div className="flex gap-3">
-                  <ShieldCheck
-                    size={18}
-                    className="mt-0.5 shrink-0 text-emerald-300"
-                  />
-                  <span>
-                    Lowest casualty risk across simulated scenarios.
-                  </span>
-                </div>
+                {evidence.map((item) => {
+                  const Icon = iconByTone[item.tone];
 
-                <div className="flex gap-3">
-                  <Timer
-                    size={18}
-                    className="mt-0.5 shrink-0 text-cyan-300"
-                  />
-                  <span>
-                    Evacuation can be completed within the safe weather window.
-                  </span>
-                </div>
+                  return (
+                    <div key={item.id} className="flex gap-3">
+                      <Icon
+                        size={18}
+                        className={`mt-0.5 shrink-0 ${colorByTone[item.tone]}`}
+                      />
 
-                <div className="flex gap-3">
-                  <Truck
-                    size={18}
-                    className="mt-0.5 shrink-0 text-blue-300"
-                  />
-                  <span>
-                    Required resources are available within current capacity.
-                  </span>
-                </div>
-
-                <div className="flex gap-3">
-                  <Gauge
-                    size={18}
-                    className="mt-0.5 shrink-0 text-amber-300"
-                  />
-                  <span>
-                    Operational risk remains manageable under current conditions.
-                  </span>
-                </div>
+                      <span>{item.label}</span>
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="mt-5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
@@ -159,8 +142,7 @@ export function DecisionIntelligence({ stage }: DecisionIntelligenceProps) {
                 </div>
 
                 <p className="mt-2 text-sm leading-6 text-slate-300">
-                  Evacuate Zone B first, deploy 18 response units, and keep
-                  medical teams on standby for the next 45 minutes.
+                  {recommendedAction}
                 </p>
               </div>
             </>
