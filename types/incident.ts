@@ -21,6 +21,7 @@ export type DecisionScenario = {
   id: string;
   name: string;
   strategy: string;
+  description?: string;
   risk: string;
   eta: string;
   resources: string;

@@ -13,6 +13,8 @@ import {
 
 type TimelineProps = {
   events: TimelineEvent[];
+  incidentTitle: string;
+  isLoading?: boolean;
 };
 
 const iconByStage = {
@@ -33,7 +35,7 @@ const colorByStage = {
   decision: "text-emerald-300",
 } as const;
 
-export function Timeline({ events }: TimelineProps) {
+export function Timeline({ events, incidentTitle, isLoading = false }: TimelineProps) {
   return (
     <section className="rounded-2xl border border-slate-800 bg-[#131C2E] p-6">
       <div className="mb-5 flex items-start justify-between">
@@ -43,7 +45,7 @@ export function Timeline({ events }: TimelineProps) {
           </p>
 
           <h2 className="mt-2 text-xl font-semibold text-white">
-            Adelaide Hills Bushfire
+            {isLoading ? "Loading incident..." : incidentTitle}
           </h2>
         </div>
 

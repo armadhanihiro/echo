@@ -65,6 +65,12 @@ export function DecisionSimulation({ progress, scenarios, simulationReady }: Dec
                 <h3 className="mt-1 text-sm font-semibold text-white">
                   {scenario.strategy}
                 </h3>
+                
+                {scenario.description && simulationReady && (
+                  <p className="mt-3 text-xs leading-5 text-slate-400">
+                    {scenario.description}
+                  </p>
+                )}
               </div>
 
               {scenario.recommended && simulationReady && (

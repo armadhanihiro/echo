@@ -7,6 +7,14 @@ type MapPanelProps = {
   routeVisible: boolean;
   mapStatus: string;
   decisionReady: boolean;
+
+  incidentTitle: string;
+  incidentType: string;
+  severity: string;
+  latitude: number | null;
+  longitude: number | null;
+  locationName: string | null;
+  metadata: Record<string, unknown> | null;
 };
 
 const MapPanelClient = dynamic(

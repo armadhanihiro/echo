@@ -9,9 +9,15 @@ type MapPanelProps = {
   routeVisible: boolean;
   mapStatus: string;
   decisionReady: boolean;
-};
 
-const center: [number, number] = [-34.919, 138.707];
+  incidentTitle: string;
+  incidentType: string;
+  severity: string;
+  latitude: number | null;
+  longitude: number | null;
+  locationName: string | null;
+  metadata: Record<string, unknown> | null;
+};
 
 const fireIcon = new L.DivIcon({
   className: "",
@@ -35,36 +41,51 @@ const route: [number, number][] = [
   [-34.948, 138.748],
 ];
 
-const stats = [
-  {
-    label: "Incident",
-    value: "Bushfire",
-    icon: Flame,
-    color: "text-red-300",
-  },
-  {
-    label: "Severity",
-    value: "Critical",
-    icon: Flame,
-    color: "text-red-300",
-  },
-  {
-    label: "Wind",
-    value: "NW · 24 km/h",
-    icon: Wind,
-    color: "text-cyan-300",
-  },
-  {
-    label: "Population at Risk",
-    value: "4,812",
-    icon: Users,
-    color: "text-violet-300",
-  },
-];
-
-export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionReady }: MapPanelProps) {
+export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionReady, incidentTitle, incidentType, severity, latitude, longitude, locationName, metadata }: MapPanelProps) {
   const hasIncident = fireRadius > 1800;
 
+  const center: [number, number] = [
+    latitude ?? -34.919,
+    longitude ?? 138.707,
+  ];
+
+  const windSpeed =
+    typeof metadata?.wind_speed_kmh === "number"
+      ? `${metadata.wind_speed_kmh} km/h`
+      : "N/A";
+
+  const populationAtRisk =
+    typeof metadata?.structures_threatened === "number"
+      ? metadata.structures_threatened.toLocaleString()
+      : "N/A";
+
+  const stats = [
+    {
+      label: "Incident",
+      value: incidentType,
+      icon: Flame,
+      color: "text-red-300",
+    },
+    {
+      label: "Severity",
+      value: severity,
+      icon: Flame,
+      color: "text-red-300",
+    },
+    {
+      label: "Wind",
+      value: windSpeed,
+      icon: Wind,
+      color: "text-cyan-300",
+    },
+    {
+      label: "Structures at Risk",
+      value: populationAtRisk,
+      icon: Users,
+      color: "text-violet-300",
+    },
+  ];
+  
   return (
     <section className="relative self-start overflow-hidden rounded-2xl border border-slate-800 bg-[#131C2E]">
       <div className="flex h-full flex-col p-6">
@@ -74,8 +95,12 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
               Live Map
             </p>
             <h2 className="mt-2 text-xl font-semibold text-white">
-              Adelaide Hills Incident Zone
+              {incidentTitle}
             </h2>
+
+            <p className="mt-1 text-xs text-slate-400">
+              {locationName ?? "Unknown location"}
+            </p>
           </div>
 
           <button className="flex items-center gap-2 rounded-xl border border-slate-700 bg-[#0B1220]/80 px-3 py-2 text-xs text-slate-300">
@@ -155,7 +180,13 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
             )}
 
             <Marker position={center} icon={fireIcon}>
-              <Popup>Bushfire detected near Adelaide Hills</Popup>
+              <Popup>
+                <strong>{incidentTitle}</strong>
+                <br />
+                {locationName ?? "Unknown location"}
+                <br />
+                Severity: {severity}
+              </Popup>
             </Marker>
 
             <Marker position={[-34.947, 138.726]} icon={hospitalIcon}>
