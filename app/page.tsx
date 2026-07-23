@@ -49,9 +49,11 @@ export default function HomePage() {
   } = useIncidentEngine();
 
   const {
+    incidents,
     selectedIncident,
     isLoading: incidentsLoading,
     error: incidentsError,
+    selectIncident,
   } = useIncidents();
 
   const {
@@ -82,6 +84,44 @@ export default function HomePage() {
   const simulationReady =
     incidentState.simulationReady &&
     Boolean(intelligence?.simulation);
+
+  const decisionReady =
+  incidentState.decisionReady &&
+  Boolean(intelligence?.decision);
+
+const recommendedAction =
+  intelligence?.decision?.action ??
+  incidentState.recommendedAction;
+
+const decisionEvidence = intelligence?.decision
+  ? [
+      {
+        id: "snowflake-decision",
+        label: intelligence.decision.reasoning ?? intelligence.decision.action,
+        tone: "emerald" as const,
+      },
+      {
+        id: "decision-maker",
+        label: `Decision authorised by ${intelligence.decision.decidedBy}.`,
+        tone: "cyan" as const,
+      },
+      {
+        id: "ai-assistance",
+        label: `Decision type: ${intelligence.decision.type}.`,
+        tone: "blue" as const,
+      },
+    ]
+  : incidentState.decisionEvidence;
+
+  function handleSelectIncident(incidentId: string) {
+    const incident = incidents.find(
+      (item) => item.id === incidentId,
+    );
+
+    if (incident) {
+      selectIncident(incident);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#0B1220] text-slate-100">
@@ -115,6 +155,9 @@ export default function HomePage() {
                   selectedIncident?.title ?? "No active incident"
                 }
                 isLoading={incidentsLoading}
+                incidents={incidents}
+                selectedIncidentId={selectedIncident?.id ?? null}
+                onSelectIncident={handleSelectIncident}
               />
 
               <MapPanel
@@ -150,11 +193,15 @@ export default function HomePage() {
             />
 
             <DecisionIntelligence
-              decisionReady={incidentState.decisionReady}
+              decisionReady={decisionReady}
               progress={incidentState.progress}
               metrics={incidentState.decisionMetrics}
-              evidence={incidentState.decisionEvidence}
-              recommendedAction={incidentState.recommendedAction}
+              evidence={decisionEvidence}
+              recommendedAction={
+                intelligenceLoading
+                  ? "Loading decision intelligence from Snowflake..."
+                  : recommendedAction
+              }
             />
           </section>
         </div>

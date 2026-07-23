@@ -11,10 +11,20 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+type IncidentOption = {
+  id: string;
+  title: string;
+  severity: string;
+  status: string;
+};
+
 type TimelineProps = {
   events: TimelineEvent[];
   incidentTitle: string;
   isLoading?: boolean;
+  incidents: IncidentOption[];
+  selectedIncidentId: string | null;
+  onSelectIncident: (incidentId: string) => void;
 };
 
 const iconByStage = {
@@ -35,7 +45,7 @@ const colorByStage = {
   decision: "text-emerald-300",
 } as const;
 
-export function Timeline({ events, incidentTitle, isLoading = false }: TimelineProps) {
+export function Timeline({ events, incidentTitle, isLoading = false, incidents, selectedIncidentId, onSelectIncident }: TimelineProps) {
   return (
     <section className="rounded-2xl border border-slate-800 bg-[#131C2E] p-6">
       <div className="mb-5 flex items-start justify-between">
@@ -52,6 +62,37 @@ export function Timeline({ events, incidentTitle, isLoading = false }: TimelineP
         <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 text-red-300">
           <Radio size={16} />
         </div>
+      </div>
+
+      <div className="mb-5">
+        <label
+          htmlFor="incident-selector"
+          className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500"
+        >
+          Select Incident
+        </label>
+
+        <select
+          id="incident-selector"
+          value={selectedIncidentId ?? ""}
+          onChange={(event) => onSelectIncident(event.target.value)}
+          disabled={isLoading || incidents.length === 0}
+          className="h-11 w-full rounded-xl border border-slate-700 bg-[#0B1220] px-3 text-sm text-slate-200 outline-none transition focus:border-cyan-500/60 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isLoading && (
+            <option value="">Loading incidents...</option>
+          )}
+
+          {!isLoading && incidents.length === 0 && (
+            <option value="">No incidents available</option>
+          )}
+
+          {incidents.map((incident) => (
+            <option key={incident.id} value={incident.id}>
+              {incident.title} · {incident.severity}
+            </option>
+          ))}
+        </select>
       </div>
 
       {events.length === 0 ? (

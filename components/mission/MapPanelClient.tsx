@@ -1,7 +1,8 @@
 "use client";
 
 import { Flame, Home, Hospital, Layers, Route, Users, Wind } from "lucide-react";
-import { Circle, MapContainer, Marker, Popup, Polyline, TileLayer } from "react-leaflet";
+import { Circle, MapContainer, Marker, Popup, Polyline, TileLayer, useMap } from "react-leaflet";
+import { useEffect } from "react";
 import L from "leaflet";
 
 type MapPanelProps = {
@@ -34,19 +35,35 @@ const shelterIcon = new L.DivIcon({
   html: `<div style="width:34px;height:34px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(16,185,129,.28);border:1px solid rgba(110,231,183,.7);font-size:16px;">🏠</div>`,
 });
 
-const route: [number, number][] = [
-  [-34.919, 138.707],
-  [-34.928, 138.72],
-  [-34.94, 138.735],
-  [-34.948, 138.748],
-];
+type MapRecenterProps = {
+  latitude: number;
+  longitude: number;
+};
 
-export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionReady, incidentTitle, incidentType, severity, latitude, longitude, locationName, metadata }: MapPanelProps) {
+function MapRecenter({ latitude, longitude }: MapRecenterProps) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView([latitude, longitude], 11, {
+      animate: true,
+    });
+  }, [latitude, longitude, map]);
+
+  return null;
+}
+
+export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionReady, latitude, longitude, incidentTitle, incidentType, severity, locationName, metadata }: MapPanelProps) {
   const hasIncident = fireRadius > 1800;
 
   const center: [number, number] = [
     latitude ?? -34.919,
     longitude ?? 138.707,
+  ];
+
+  const route: [number, number][] = [
+    center,
+    [center[0] - 0.02, center[1] - 0.015],
+    [center[0] - 0.04, center[1] - 0.03],
   ];
 
   const windSpeed =
@@ -55,9 +72,15 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
       : "N/A";
 
   const populationAtRisk =
-    typeof metadata?.structures_threatened === "number"
-      ? metadata.structures_threatened.toLocaleString()
-      : "N/A";
+  typeof metadata?.structures_threatened === "number"
+    ? metadata.structures_threatened.toLocaleString()
+    : typeof metadata?.properties_affected === "number"
+      ? metadata.properties_affected.toLocaleString()
+      : typeof metadata?.residents_evacuated === "number"
+        ? metadata.residents_evacuated.toLocaleString()
+        : typeof metadata?.injuries_critical === "number"
+          ? metadata.injuries_critical.toLocaleString()
+          : "N/A";
 
   const stats = [
     {
@@ -79,7 +102,7 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
       color: "text-cyan-300",
     },
     {
-      label: "Structures at Risk",
+      label: "Impact",
       value: populationAtRisk,
       icon: Users,
       color: "text-violet-300",
@@ -146,6 +169,10 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
             scrollWheelZoom={false}
             className="h-full w-full"
           >
+            <MapRecenter
+              latitude={center[0]}
+              longitude={center[1]}
+            />
             <TileLayer
               attribution="&copy; Esri, Maxar, Earthstar Geographics"
               url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
