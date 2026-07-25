@@ -25,6 +25,7 @@ type TimelineProps = {
   incidents: IncidentOption[];
   selectedIncidentId: string | null;
   onSelectIncident: (incidentId: string) => void;
+  isSwitching?: boolean;
 };
 
 const iconByStage = {
@@ -45,7 +46,7 @@ const colorByStage = {
   decision: "text-emerald-300",
 } as const;
 
-export function Timeline({ events, incidentTitle, isLoading = false, incidents, selectedIncidentId, onSelectIncident }: TimelineProps) {
+export function Timeline({ events, incidentTitle, isLoading = false, isSwitching = false, incidents, selectedIncidentId, onSelectIncident }: TimelineProps) {
   return (
     <section className="rounded-2xl border border-slate-800 bg-[#131C2E] p-6">
       <div className="mb-5 flex items-start justify-between">
@@ -76,7 +77,7 @@ export function Timeline({ events, incidentTitle, isLoading = false, incidents, 
           id="incident-selector"
           value={selectedIncidentId ?? ""}
           onChange={(event) => onSelectIncident(event.target.value)}
-          disabled={isLoading || incidents.length === 0}
+          disabled={isLoading || isSwitching || incidents.length === 0}
           className="h-11 w-full rounded-xl border border-slate-700 bg-[#0B1220] px-3 text-sm text-slate-200 outline-none transition focus:border-cyan-500/60 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isLoading && (

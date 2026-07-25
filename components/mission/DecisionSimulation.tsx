@@ -6,9 +6,11 @@ type DecisionSimulationProps = {
   progress: number;
   scenarios: DecisionScenario[];
   simulationReady: boolean;
+  isLoading?: boolean;
+  hasSimulation: boolean;
 };
 
-export function DecisionSimulation({ progress, scenarios, simulationReady }: DecisionSimulationProps) {
+export function DecisionSimulation({ progress, scenarios, simulationReady, isLoading = false, hasSimulation }: DecisionSimulationProps) {
   const hasStarted = progress > 0;
   const isSimulating = progress > 0 && progress < 100;
 
@@ -34,11 +36,15 @@ export function DecisionSimulation({ progress, scenarios, simulationReady }: Dec
                 : "border-slate-700 bg-slate-800/60 text-slate-400"
           }`}
         >
-          {simulationReady
-            ? "Simulation Ready"
-            : isSimulating
-              ? "Simulating"
-              : "Waiting"}
+          {isLoading
+            ? "Loading"
+            : simulationReady
+              ? "Simulation Ready"
+              : !hasSimulation && progress === 100
+                ? "Unavailable"
+                : isSimulating
+                  ? "Simulating"
+                  : "Waiting"}
         </span>
       </div>
 
@@ -49,90 +55,119 @@ export function DecisionSimulation({ progress, scenarios, simulationReady }: Dec
         />
       </div>
 
-      <div className="mt-5 grid grid-cols-3 gap-4">
-        {scenarios.map((scenario) => (
-          <div
-            key={scenario.id}
-            className={`rounded-2xl border p-4 transition-all ${
-              scenario.recommended && simulationReady
-                ? "border-emerald-500/40 bg-emerald-500/5"
-                : "border-slate-800 bg-[#1A2438]"
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-slate-400">{scenario.name}</p>
-                <h3 className="mt-1 text-sm font-semibold text-white">
-                  {scenario.strategy}
-                </h3>
-                
-                {scenario.description && simulationReady && (
-                  <p className="mt-3 text-xs leading-5 text-slate-400">
-                    {scenario.description}
+      {isLoading ? (
+        <div className="mt-5 rounded-2xl border border-dashed border-slate-700 bg-[#0B1220] p-8 text-center">
+          <p className="text-sm font-semibold text-slate-300">
+            Loading simulation from Snowflake...
+          </p>
+
+          <p className="mt-2 text-xs text-slate-500">
+            Retrieving completed response scenarios.
+          </p>
+        </div>
+      ) : !hasSimulation ? (
+        <div className="mt-5 rounded-2xl border border-dashed border-slate-700 bg-[#0B1220] p-8 text-center">
+          <p className="text-sm font-semibold text-slate-300">
+            No completed simulation available
+          </p>
+
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            This incident does not currently have a completed simulation run in
+            Snowflake.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-5 grid grid-cols-3 gap-4">
+          {scenarios.map((scenario) => (
+            <div
+              key={scenario.id}
+              className={`rounded-2xl border p-4 transition-all ${
+                scenario.recommended && simulationReady
+                  ? "border-emerald-500/40 bg-emerald-500/5"
+                  : "border-slate-800 bg-[#1A2438]"
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-slate-400">
+                    {scenario.name}
                   </p>
+
+                  <h3 className="mt-1 text-sm font-semibold text-white">
+                    {scenario.strategy}
+                  </h3>
+
+                  {scenario.description && simulationReady && (
+                    <p className="mt-3 text-xs leading-5 text-slate-400">
+                      {scenario.description}
+                    </p>
+                  )}
+                </div>
+
+                {scenario.recommended && simulationReady && (
+                  <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-[10px] font-semibold text-emerald-300">
+                    Recommended
+                  </span>
                 )}
               </div>
 
-              {scenario.recommended && simulationReady && (
-                <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-[10px] font-semibold text-emerald-300">
-                  Recommended
-                </span>
+              {!hasStarted ? (
+                <div className="mt-6 rounded-xl border border-dashed border-slate-700 p-4 text-xs text-slate-500">
+                  Waiting for incident evidence.
+                </div>
+              ) : (
+                <>
+                  <div className="mt-5 grid grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <p className="text-slate-500">Risk</p>
+                      <p className="mt-1 font-semibold text-white">
+                        {simulationReady ? scenario.risk : "Pending"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-slate-500">ETA</p>
+                      <p className="mt-1 font-semibold text-white">
+                        {simulationReady ? scenario.eta : "Pending"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-slate-500">Resources</p>
+                      <p className="mt-1 font-semibold text-white">
+                        {simulationReady ? scenario.resources : "Pending"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-500">Confidence</span>
+
+                      <span className="font-semibold text-slate-200">
+                        {simulationReady
+                          ? `${scenario.confidence}%`
+                          : "--"}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 h-2 rounded-full bg-slate-800">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-700 ${scenario.color}`}
+                        style={{
+                          width: simulationReady
+                            ? `${scenario.confidence}%`
+                            : "0%",
+                        }}
+                      />
+                    </div>
+                  </div>
+                </>
               )}
             </div>
-
-            {!hasStarted ? (
-              <div className="mt-6 rounded-xl border border-dashed border-slate-700 p-4 text-xs text-slate-500">
-                Waiting for incident evidence.
-              </div>
-            ) : (
-              <>
-                <div className="mt-5 grid grid-cols-3 gap-3 text-xs">
-                  <div>
-                    <p className="text-slate-500">Risk</p>
-                    <p className="mt-1 font-semibold text-white">
-                      {simulationReady ? scenario.risk : "Pending"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-slate-500">ETA</p>
-                    <p className="mt-1 font-semibold text-white">
-                      {simulationReady ? scenario.eta : "Pending"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-slate-500">Resources</p>
-                    <p className="mt-1 font-semibold text-white">
-                      {simulationReady ? scenario.resources : "Pending"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Confidence</span>
-                    <span className="font-semibold text-slate-200">
-                      {simulationReady ? `${scenario.confidence}%` : "--"}
-                    </span>
-                  </div>
-
-                  <div className="mt-2 h-2 rounded-full bg-slate-800">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-700 ${scenario.color}`}
-                      style={{
-                        width: simulationReady
-                          ? `${scenario.confidence}%`
-                          : "0%",
-                      }}
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

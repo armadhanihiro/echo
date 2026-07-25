@@ -1,6 +1,6 @@
 "use client";
 
-import { Flame, Home, Hospital, Layers, Route, Users, Wind } from "lucide-react";
+import { Flame, Layers, Route, Users, Wind } from "lucide-react";
 import { Circle, MapContainer, Marker, Popup, Polyline, TileLayer, useMap } from "react-leaflet";
 import { useEffect } from "react";
 import L from "leaflet";
@@ -18,6 +18,16 @@ type MapPanelProps = {
   longitude: number | null;
   locationName: string | null;
   metadata: Record<string, unknown> | null;
+  resources: MapResource[];
+};
+
+type MapResource = {
+  id: string;
+  type: string;
+  name: string;
+  status: string;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 const fireIcon = new L.DivIcon({
@@ -25,15 +35,38 @@ const fireIcon = new L.DivIcon({
   html: `<div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.28);border:1px solid rgba(248,113,113,.7);box-shadow:0 0 38px rgba(239,68,68,.55);font-size:22px;">🔥</div>`,
 });
 
-const hospitalIcon = new L.DivIcon({
-  className: "",
-  html: `<div style="width:34px;height:34px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(37,99,235,.32);border:1px solid rgba(147,197,253,.7);font-size:16px;">🏥</div>`,
-});
+function createResourceIcon(type: string) {
+  const symbol =
+    type === "VEHICLE"
+      ? "🚒"
+      : type === "PERSONNEL"
+        ? "👥"
+        : type === "EQUIPMENT"
+          ? "🛠️"
+          : "📦";
 
-const shelterIcon = new L.DivIcon({
-  className: "",
-  html: `<div style="width:34px;height:34px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(16,185,129,.28);border:1px solid rgba(110,231,183,.7);font-size:16px;">🏠</div>`,
-});
+  return new L.DivIcon({
+    className: "",
+    html: `
+      <div
+        style="
+          width:34px;
+          height:34px;
+          border-radius:999px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:rgba(14,165,233,.28);
+          border:1px solid rgba(125,211,252,.7);
+          box-shadow:0 0 20px rgba(14,165,233,.25);
+          font-size:15px;
+        "
+      >
+        ${symbol}
+      </div>
+    `,
+  });
+  }
 
 type MapRecenterProps = {
   latitude: number;
@@ -52,7 +85,7 @@ function MapRecenter({ latitude, longitude }: MapRecenterProps) {
   return null;
 }
 
-export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionReady, latitude, longitude, incidentTitle, incidentType, severity, locationName, metadata }: MapPanelProps) {
+export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionReady, latitude, longitude, incidentTitle, incidentType, severity, locationName, metadata, resources }: MapPanelProps) {
   const hasIncident = fireRadius > 1800;
 
   const center: [number, number] = [
@@ -216,13 +249,33 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
               </Popup>
             </Marker>
 
-            <Marker position={[-34.947, 138.726]} icon={hospitalIcon}>
-              <Popup>Mount Barker Hospital</Popup>
-            </Marker>
+            {resources.map((resource) => {
+              if (
+                resource.latitude === null ||
+                resource.longitude === null
+              ) {
+                return null;
+              }
 
-            <Marker position={[-34.886, 138.766]} icon={shelterIcon}>
-              <Popup>Emergency Shelter</Popup>
-            </Marker>
+              return (
+                <Marker
+                  key={resource.id}
+                  position={[
+                    resource.latitude,
+                    resource.longitude,
+                  ]}
+                  icon={createResourceIcon(resource.type)}
+                >
+                  <Popup>
+                    <strong>{resource.name}</strong>
+                    <br />
+                    Type: {resource.type}
+                    <br />
+                    Status: {resource.status}
+                  </Popup>
+                </Marker>
+              );
+            })}
           </MapContainer>
 
           <div className="pointer-events-none absolute inset-0 z-[400] bg-[#0B1220]/25 mix-blend-multiply" />
@@ -243,15 +296,27 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
             <div className="grid gap-2 text-xs text-slate-300">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-red-400" />
-                Fire Zone
+                Incident Zone
               </div>
               <div className="flex items-center gap-2">
-                <Hospital size={13} className="text-blue-300" />
-                Hospitals
+                <span className="flex h-4 w-4 items-center justify-center text-[11px]">
+                  🚒
+                </span>
+                Vehicles
               </div>
+
               <div className="flex items-center gap-2">
-                <Home size={13} className="text-emerald-300" />
-                Shelters
+                <span className="flex h-4 w-4 items-center justify-center text-[11px]">
+                  👥
+                </span>
+                Personnel
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="flex h-4 w-4 items-center justify-center text-[11px]">
+                  🛠️
+                </span>
+                Equipment
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-[2px] w-4 rounded-full bg-cyan-300" />

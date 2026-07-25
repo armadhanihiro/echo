@@ -15,6 +15,16 @@ type MapPanelProps = {
   longitude: number | null;
   locationName: string | null;
   metadata: Record<string, unknown> | null;
+  resources: MapResource[];
+};
+
+type MapResource = {
+  id: string;
+  type: string;
+  name: string;
+  status: string;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 const MapPanelClient = dynamic(

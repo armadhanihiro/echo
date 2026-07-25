@@ -28,6 +28,8 @@ type ResourceRow = {
   RESOURCE_TYPE: string;
   NAME: string;
   STATUS: string;
+  LOCATION_LAT: number | null;
+  LOCATION_LNG: number | null;
   CAPACITY: number | null;
   METADATA: Record<string, unknown> | string | null;
   PRIORITY: number;
@@ -75,6 +77,8 @@ export type IncidentIntelligenceDto = {
     type: string;
     name: string;
     status: string;
+    latitude: number | null;
+  longitude: number | null;
     capacity: number | null;
     priority: number;
   }>;
@@ -207,6 +211,8 @@ export async function getIncidentIntelligence(
       type: resource.RESOURCE_TYPE,
       name: resource.NAME,
       status: resource.STATUS,
+      latitude: resource.LOCATION_LAT,
+      longitude: resource.LOCATION_LNG,
       capacity: resource.CAPACITY,
       priority: resource.PRIORITY,
     })),

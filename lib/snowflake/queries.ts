@@ -74,6 +74,8 @@ export const intelligenceQueries = {
       r.resource_type,
       r.name,
       r.status,
+      r.location_lat,
+      r.location_lng,
       r.capacity,
       r.metadata,
       a.priority,

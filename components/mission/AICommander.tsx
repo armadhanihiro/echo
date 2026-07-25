@@ -13,6 +13,9 @@ import {
   Loader2,
   Route,
   ShieldAlert,
+  Truck,
+  Users,
+  Wrench,
 } from "lucide-react";
 
 type AICommanderProps = {
@@ -20,6 +23,17 @@ type AICommanderProps = {
   confidence: number;
   recommendation: string;
   decisionReady: boolean;
+  resources: CommanderResource[];
+  resourcesLoading?: boolean;
+};
+
+type CommanderResource = {
+  id: string;
+  type: string;
+  name: string;
+  status: string;
+  capacity: number | null;
+  priority: number;
 };
 
 const iconByAgentId = {
@@ -41,12 +55,20 @@ function getStatusIcon(status: AgentStatus) {
   return <span className="h-2 w-2 rounded-full bg-slate-600" />;
 }
 
-export function AICommander({
-  agents,
-  confidence,
-  recommendation,
-  decisionReady,
-}: AICommanderProps) {
+function getResourceIcon(resourceType: string) {
+  switch (resourceType) {
+    case "VEHICLE":
+      return Truck;
+    case "PERSONNEL":
+      return Users;
+    case "EQUIPMENT":
+      return Wrench;
+    default:
+      return ShieldAlert;
+  }
+}
+
+export function AICommander({ agents, confidence, recommendation, decisionReady, resources, resourcesLoading = false }: AICommanderProps) {
   const hasStarted = agents.some(
     (agent) => agent.status !== "waiting",
   );
@@ -133,6 +155,70 @@ export function AICommander({
             </div>
           );
         })}
+      </div>
+
+      <div className="mt-5">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Deployed Resources
+          </p>
+
+          {!resourcesLoading && (
+            <span className="text-xs text-slate-500">
+              {resources.length} active
+            </span>
+          )}
+        </div>
+
+        {resourcesLoading ? (
+          <div className="rounded-xl border border-dashed border-slate-700 bg-[#0B1220] p-4 text-xs text-slate-500">
+            Loading allocated resources from Snowflake...
+          </div>
+        ) : resources.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-700 bg-[#0B1220] p-4 text-xs text-slate-500">
+            No active resources allocated to this incident.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {resources.map((resource) => {
+              const Icon = getResourceIcon(resource.type);
+
+              return (
+                <div
+                  key={resource.id}
+                  className="flex items-center gap-3 rounded-xl border border-slate-800 bg-[#1A2438] p-3"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B1220] text-blue-300">
+                    <Icon size={17} />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-white">
+                      {resource.name}
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-400">
+                      {resource.type}
+                      {resource.capacity !== null
+                        ? ` · Capacity ${resource.capacity}`
+                        : ""}
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase text-emerald-300">
+                      {resource.status}
+                    </span>
+
+                    <p className="mt-2 text-[10px] text-slate-500">
+                      Priority {resource.priority}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="mt-5 rounded-xl border border-slate-800 bg-[#0B1220] p-4">

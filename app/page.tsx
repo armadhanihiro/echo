@@ -42,19 +42,20 @@ function mapSimulationScenarios(scenarios: SimulationScenarioDto[], selectedScen
 
 export default function HomePage() {
   const {
-    stage,
-    incidentState,
-    isRunning,
-    startIncident,
-  } = useIncidentEngine();
-
-  const {
     incidents,
     selectedIncident,
     isLoading: incidentsLoading,
     error: incidentsError,
     selectIncident,
   } = useIncidents();
+  
+  const {
+    stage,
+    incidentState,
+    isRunning,
+    startIncident,
+    resetIncident,
+  } = useIncidentEngine(selectedIncident);
 
   const {
     intelligence,
@@ -63,64 +64,77 @@ export default function HomePage() {
   } = useIncidentIntelligence(
     selectedIncident?.id ?? null,
   );
+
+  const activeIntelligence = intelligenceLoading ? null : intelligence;
   
   const commanderConfidence =
-    intelligence?.recommendation?.confidence ??
+    activeIntelligence?.recommendation?.confidence ??
     incidentState.confidence;
 
   const commanderRecommendation =
-    intelligence?.recommendation?.content ??
+    activeIntelligence?.recommendation?.content ??
     incidentState.recommendation;
 
+  const simulation = activeIntelligence?.simulation ?? null;
+
+  const hasSimulation = Boolean(simulation) && Boolean(simulation?.scenarios.length);
+
   const simulationScenarios =
-    intelligence?.simulation?.scenarios?.length
+    simulation && simulation.scenarios.length > 0
       ? mapSimulationScenarios(
-          intelligence.simulation.scenarios,
-          intelligence.simulation.selectedScenario,
-          intelligence.simulation.confidence,
+          simulation.scenarios,
+          simulation.selectedScenario,
+          simulation.confidence,
         )
-      : incidentState.scenarios;
+      : [];
 
-  const simulationReady =
-    incidentState.simulationReady &&
-    Boolean(intelligence?.simulation);
+  const simulationReady = incidentState.simulationReady && hasSimulation;
 
-  const decisionReady =
-  incidentState.decisionReady &&
-  Boolean(intelligence?.decision);
+  const decisionReady = incidentState.decisionReady && Boolean(activeIntelligence?.decision);
 
-const recommendedAction =
-  intelligence?.decision?.action ??
-  incidentState.recommendedAction;
+  const recommendedAction = activeIntelligence?.decision?.action ?? incidentState.recommendedAction;
 
-const decisionEvidence = intelligence?.decision
-  ? [
-      {
-        id: "snowflake-decision",
-        label: intelligence.decision.reasoning ?? intelligence.decision.action,
-        tone: "emerald" as const,
-      },
-      {
-        id: "decision-maker",
-        label: `Decision authorised by ${intelligence.decision.decidedBy}.`,
-        tone: "cyan" as const,
-      },
-      {
-        id: "ai-assistance",
-        label: `Decision type: ${intelligence.decision.type}.`,
-        tone: "blue" as const,
-      },
-    ]
-  : incidentState.decisionEvidence;
+  const decisionEvidence = activeIntelligence?.decision
+    ? [
+        {
+          id: "snowflake-decision",
+          label:
+            activeIntelligence.decision.reasoning ??
+            activeIntelligence.decision.action,
+          tone: "emerald" as const,
+        },
+        {
+          id: "decision-maker",
+          label: `Decision authorised by ${activeIntelligence.decision.decidedBy}.`,
+          tone: "cyan" as const,
+        },
+        {
+          id: "decision-type",
+          label: `Decision type: ${activeIntelligence.decision.type}.`,
+          tone: "blue" as const,
+        },
+      ]
+    : incidentState.decisionEvidence;
 
   function handleSelectIncident(incidentId: string) {
     const incident = incidents.find(
       (item) => item.id === incidentId,
     );
 
-    if (incident) {
-      selectIncident(incident);
-    }
+    if (!incident) return;
+
+    resetIncident();
+    selectIncident(incident);
+  }
+
+  const deployedResources = activeIntelligence?.resources ?? [];
+
+  const dashboardLoading = incidentsLoading || intelligenceLoading;
+
+  function handleStartIncident() {
+    if (!selectedIncident || dashboardLoading) return;
+
+    startIncident();
   }
 
   return (
@@ -132,7 +146,8 @@ const decisionEvidence = intelligence?.decision
           <TopNavigation
             stage={stage}
             isRunning={isRunning}
-            onStartIncident={startIncident}
+            onStartIncident={handleStartIncident}
+            disabled={dashboardLoading || !selectedIncident}
           />
 
           <section className="flex flex-col gap-6 p-6">
@@ -148,48 +163,79 @@ const decisionEvidence = intelligence?.decision
               </div>
             )}
 
-            <div className="grid min-h-[620px] grid-cols-[280px_1fr_340px] gap-6">
-              <Timeline
-                events={incidentState.timeline}
-                incidentTitle={
-                  selectedIncident?.title ?? "No active incident"
-                }
-                isLoading={incidentsLoading}
-                incidents={incidents}
-                selectedIncidentId={selectedIncident?.id ?? null}
-                onSelectIncident={handleSelectIncident}
-              />
-
-              <MapPanel
-                fireRadius={incidentState.fireRadius}
-                routeVisible={incidentState.routeVisible}
-                mapStatus={incidentState.mapStatus}
-                decisionReady={incidentState.decisionReady}
-                incidentTitle={selectedIncident?.title ?? "Loading incident"}
-                incidentType={selectedIncident?.type ?? "UNKNOWN"}
-                severity={selectedIncident?.severity ?? "UNKNOWN"}
-                latitude={selectedIncident?.latitude ?? null}
-                longitude={selectedIncident?.longitude ?? null}
-                locationName={selectedIncident?.locationName ?? null}
-                metadata={selectedIncident?.metadata ?? null}
-              />
-
-              <AICommander
-                agents={incidentState.agents}
-                confidence={commanderConfidence}
-                recommendation={
+            <div className="relative">
+              <div
+                className={`grid min-h-[620px] grid-cols-[280px_1fr_340px] gap-6 transition ${
                   intelligenceLoading
-                    ? "Loading recommendation from Snowflake..."
-                    : commanderRecommendation
-                }
-                decisionReady={incidentState.decisionReady}
-              />
+                    ? "pointer-events-none opacity-50"
+                    : "opacity-100"
+                }`}
+              >
+                <Timeline
+                  events={incidentState.timeline}
+                  incidentTitle={
+                    selectedIncident?.title ?? "No active incident"
+                  }
+                  isLoading={incidentsLoading}
+                  isSwitching={intelligenceLoading}
+                  incidents={incidents}
+                  selectedIncidentId={selectedIncident?.id ?? null}
+                  onSelectIncident={handleSelectIncident}
+                />
+
+                <MapPanel
+                  fireRadius={incidentState.fireRadius}
+                  routeVisible={incidentState.routeVisible}
+                  mapStatus={incidentState.mapStatus}
+                  decisionReady={incidentState.decisionReady}
+                  incidentTitle={selectedIncident?.title ?? "Loading incident"}
+                  incidentType={selectedIncident?.type ?? "UNKNOWN"}
+                  severity={selectedIncident?.severity ?? "UNKNOWN"}
+                  latitude={selectedIncident?.latitude ?? null}
+                  longitude={selectedIncident?.longitude ?? null}
+                  locationName={selectedIncident?.locationName ?? null}
+                  metadata={selectedIncident?.metadata ?? null}
+                  resources={deployedResources}
+                />
+
+                <AICommander
+                  agents={incidentState.agents}
+                  confidence={commanderConfidence}
+                  recommendation={
+                    intelligenceLoading
+                      ? "Loading recommendation from Snowflake..."
+                      : commanderRecommendation
+                  }
+                  decisionReady={decisionReady}
+                  resources={deployedResources}
+                  resourcesLoading={intelligenceLoading}
+                />
+              </div>
+
+              {intelligenceLoading && selectedIncident && (
+                <div className="absolute inset-0 z-[700] flex items-center justify-center rounded-2xl bg-[#0B1220]/40 backdrop-blur-[2px]">
+                  <div className="rounded-2xl border border-cyan-500/20 bg-[#131C2E]/95 px-6 py-5 text-center shadow-2xl">
+                    <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-700 border-t-cyan-300" />
+
+                    <p className="mt-4 text-sm font-semibold text-white">
+                      Loading incident intelligence
+                    </p>
+
+                    <p className="mt-1 max-w-[260px] text-xs leading-5 text-slate-400">
+                      Retrieving recommendations, resources, decisions, and simulations
+                      from Snowflake.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <DecisionSimulation
               progress={incidentState.progress}
               scenarios={simulationScenarios}
               simulationReady={simulationReady}
+              isLoading={intelligenceLoading}
+              hasSimulation={hasSimulation}
             />
 
             <DecisionIntelligence

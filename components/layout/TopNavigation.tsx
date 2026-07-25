@@ -5,9 +5,10 @@ type TopNavigationProps = {
   stage: IncidentStage;
   isRunning: boolean;
   onStartIncident: () => void;
+  disabled?: boolean;
 };
 
-export function TopNavigation({ stage, isRunning, onStartIncident }: TopNavigationProps) {
+export function TopNavigation({ stage, isRunning, onStartIncident, disabled = false }: TopNavigationProps) {
   return (
     <header className="flex h-16 items-center justify-between border-b border-slate-800 bg-[#131C2E] px-6">
       <div>
@@ -32,11 +33,18 @@ export function TopNavigation({ stage, isRunning, onStartIncident }: TopNavigati
         </span>
 
         <button
+          type="button"
           onClick={onStartIncident}
-          className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+          disabled={disabled}
+          className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
         >
           <Play size={15} />
-          {isRunning ? "Restart Incident" : "Start Incident"}
+
+          {disabled
+            ? "Loading Incident"
+            : isRunning
+              ? "Restart Incident"
+              : "Start Incident"}
         </button>
 
         <div className="hidden items-center gap-2 text-slate-400 xl:flex">
