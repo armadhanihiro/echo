@@ -11,6 +11,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "ECHO",
   description: "Emergency Coordination Hub & Operations",
+  icons: {
+    icon: "/echo-logo.png",
+    shortcut: "/echo-logo.png",
+    apple: "/echo-logo.png",
+  },
 };
 
 export default function RootLayout({

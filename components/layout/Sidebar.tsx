@@ -1,12 +1,5 @@
-import {
-  Activity,
-  Bot,
-  FileText,
-  Home,
-  Map,
-  Settings,
-  Siren,
-} from "lucide-react";
+import { Activity, Bot, FileText, Home, Map, Settings, Siren } from "lucide-react";
+import Image from "next/image";
 
 const navItems = [
   { icon: Home, label: "Mission" },
@@ -22,7 +15,7 @@ export function Sidebar() {
   return (
     <aside className="flex min-h-screen w-[72px] flex-col items-center border-r border-slate-800 bg-[#101827] py-4">
       <div className="mb-8 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold text-white">
-        E
+        <Image src="/echo-logo.png" alt="ECHO" width={44} height={44} className="rounded-xl"/>
       </div>
 
       <nav className="flex flex-1 flex-col gap-3">

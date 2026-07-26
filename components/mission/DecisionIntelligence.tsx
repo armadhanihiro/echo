@@ -18,6 +18,8 @@ type DecisionIntelligenceProps = {
   metrics: DecisionMetric[];
   evidence: DecisionEvidence[];
   recommendedAction: string;
+  selectedScenarioName: string;
+  selectedScenarioStrategy: string;
 };
 
 const iconByTone = {
@@ -34,7 +36,7 @@ const colorByTone = {
   amber: "text-amber-300",
 } as const;
 
-export function DecisionIntelligence({ decisionReady, progress, metrics, evidence, recommendedAction }: DecisionIntelligenceProps) {
+export function DecisionIntelligence({ decisionReady, progress, metrics, evidence, recommendedAction, selectedScenarioName, selectedScenarioStrategy }: DecisionIntelligenceProps) {
   const isAnalysing = progress > 0 && !decisionReady;
 
   return (
@@ -46,7 +48,7 @@ export function DecisionIntelligence({ decisionReady, progress, metrics, evidenc
           </p>
 
           <h2 className="mt-2 text-xl font-semibold text-white">
-            Why Scenario A was selected
+            Why {selectedScenarioName} was selected
           </h2>
         </div>
 
@@ -70,7 +72,7 @@ export function DecisionIntelligence({ decisionReady, progress, metrics, evidenc
       <div className="mt-5 grid grid-cols-[1.1fr_0.9fr] gap-5">
         <div className="rounded-2xl border border-slate-800 bg-[#0B1220] p-5">
           <p className="text-sm font-semibold text-white">
-            Scenario A: Immediate Evacuation
+            {selectedScenarioName}: {selectedScenarioStrategy}
           </p>
 
           {!decisionReady ? (

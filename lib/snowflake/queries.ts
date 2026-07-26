@@ -103,3 +103,16 @@ export const intelligenceQueries = {
     LIMIT 1
   `,
 } as const;
+
+export const cortexQueries = {
+  groundedAnswer: `
+    SELECT AI_COMPLETE(
+      'llama3.1-8b',
+      ?,
+      {
+        'temperature': 0,
+        'max_tokens': 500
+      }
+    ) AS response
+  `,
+} as const;

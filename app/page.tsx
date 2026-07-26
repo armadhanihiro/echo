@@ -7,6 +7,7 @@ import { DecisionIntelligence } from "@/components/mission/DecisionIntelligence"
 import { DecisionSimulation } from "@/components/mission/DecisionSimulation";
 import { MapPanel } from "@/components/mission/MapPanel";
 import { Timeline } from "@/components/mission/Timeline";
+import { AskEcho } from "@/components/mission/AskEcho";
 
 import { useIncidentEngine } from "@/hooks/useIncidentEngine";
 import { useIncidents } from "@/hooks/useIncidents";
@@ -66,19 +67,10 @@ export default function HomePage() {
   );
 
   const activeIntelligence = intelligenceLoading ? null : intelligence;
-  
-  const commanderConfidence =
-    activeIntelligence?.recommendation?.confidence ??
-    incidentState.confidence;
-
-  const commanderRecommendation =
-    activeIntelligence?.recommendation?.content ??
-    incidentState.recommendation;
-
+  const commanderConfidence = activeIntelligence?.recommendation?.confidence ?? incidentState.confidence;
+  const commanderRecommendation = activeIntelligence?.recommendation?.content ?? incidentState.recommendation;
   const simulation = activeIntelligence?.simulation ?? null;
-
   const hasSimulation = Boolean(simulation) && Boolean(simulation?.scenarios.length);
-
   const simulationScenarios =
     simulation && simulation.scenarios.length > 0
       ? mapSimulationScenarios(
@@ -88,12 +80,10 @@ export default function HomePage() {
         )
       : [];
 
+  const recommendedScenario = simulationScenarios.find((scenario) => scenario.recommended) ?? simulationScenarios[0] ?? null;
   const simulationReady = incidentState.simulationReady && hasSimulation;
-
   const decisionReady = incidentState.decisionReady && Boolean(activeIntelligence?.decision);
-
   const recommendedAction = activeIntelligence?.decision?.action ?? incidentState.recommendedAction;
-
   const decisionEvidence = activeIntelligence?.decision
     ? [
         {
@@ -248,6 +238,17 @@ export default function HomePage() {
                   ? "Loading decision intelligence from Snowflake..."
                   : recommendedAction
               }
+              selectedScenarioName={
+                recommendedScenario?.name ?? "Recommended Scenario"
+              }
+              selectedScenarioStrategy={
+                recommendedScenario?.strategy ?? "No completed simulation available"
+              }
+            />
+
+            <AskEcho
+              incidentTitle={selectedIncident?.title}
+              incidentType={selectedIncident?.type}
             />
           </section>
         </div>

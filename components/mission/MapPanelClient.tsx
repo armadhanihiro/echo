@@ -1,8 +1,19 @@
 "use client";
 
-import { Flame, Layers, Route, Users, Wind } from "lucide-react";
+import {
+  Flame,
+  Waves,
+  ShieldAlert,
+  Ambulance,
+  AlertTriangle,
+  Layers,
+  Route,
+  Users,
+  Wind,
+} from "lucide-react";
 import { Circle, MapContainer, Marker, Popup, Polyline, TileLayer, useMap } from "react-leaflet";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import L from "leaflet";
 
 type MapPanelProps = {
@@ -30,10 +41,45 @@ type MapResource = {
   longitude: number | null;
 };
 
-const fireIcon = new L.DivIcon({
-  className: "",
-  html: `<div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,.28);border:1px solid rgba(248,113,113,.7);box-shadow:0 0 38px rgba(239,68,68,.55);font-size:22px;">🔥</div>`,
-});
+function createIncidentIcon(type: string) {
+  const Icon =
+    {
+      FIRE: Flame,
+      FLOOD: Waves,
+      HAZMAT: ShieldAlert,
+      MEDICAL: Ambulance,
+      OTHER: AlertTriangle,
+    }[type] ?? AlertTriangle;
+
+  return new L.DivIcon({
+    className: "",
+    html: `
+      <div
+        style="
+          width:46px;
+          height:46px;
+          border-radius:9999px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:rgba(6,182,212,.18);
+          border:1px solid rgba(34,211,238,.45);
+          box-shadow:0 0 25px rgba(34,211,238,.25);
+        "
+      >
+        ${renderToStaticMarkup(
+          <Icon
+            size={22}
+            color="#67E8F9"
+            strokeWidth={2.2}
+          />,
+        )}
+      </div>
+    `,
+    iconSize: [46, 46],
+    iconAnchor: [23, 23],
+  });
+}
 
 function createResourceIcon(type: string) {
   const symbol =
@@ -93,6 +139,11 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
     longitude ?? 138.707,
   ];
 
+  const incidentIcon = useMemo(() => 
+    createIncidentIcon(incidentType),
+    [incidentType],
+  );
+
   const route: [number, number][] = [
     center,
     [center[0] - 0.02, center[1] - 0.015],
@@ -115,18 +166,54 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
           ? metadata.injuries_critical.toLocaleString()
           : "N/A";
 
+  function getIncidentAppearance(type: string) {
+    switch (type) {
+      case "FIRE":
+        return {
+          icon: Flame,
+          color: "text-red-300",
+        };
+
+      case "FLOOD":
+        return {
+          icon: Waves,
+          color: "text-blue-300",
+        };
+
+      case "HAZMAT":
+        return {
+          icon: ShieldAlert,
+          color: "text-yellow-300",
+        };
+
+      case "MEDICAL":
+        return {
+          icon: Ambulance,
+          color: "text-emerald-300",
+        };
+
+      default:
+        return {
+          icon: AlertTriangle,
+          color: "text-slate-300",
+        };
+    }
+  }
+
+  const appearance = getIncidentAppearance(incidentType);
+
   const stats = [
     {
       label: "Incident",
       value: incidentType,
-      icon: Flame,
-      color: "text-red-300",
+      icon: appearance.icon,
+      color: appearance.color,
     },
     {
       label: "Severity",
       value: severity,
-      icon: Flame,
-      color: "text-red-300",
+      icon: appearance.icon,
+      color: appearance.color,
     },
     {
       label: "Wind",
@@ -239,7 +326,7 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
               />
             )}
 
-            <Marker position={center} icon={fireIcon}>
+            <Marker position={center} icon={incidentIcon}>
               <Popup>
                 <strong>{incidentTitle}</strong>
                 <br />
