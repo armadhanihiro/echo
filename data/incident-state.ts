@@ -134,8 +134,9 @@ function getVisibleTimeline(stage: IncidentStage) {
   );
 }
 
-function getAgents(stage: IncidentStage): IncidentAgent[] {
+function getAgents(stage: IncidentStage, incidentType?: string): IncidentAgent[] {
   const currentIndex = stageOrder.indexOf(stage);
+  const details = getAgentDetails(incidentType);
 
   const agentStages: Record<string, IncidentStage> = {
     weather: "weather",
@@ -152,14 +153,7 @@ function getAgents(stage: IncidentStage): IncidentAgent[] {
       return {
         ...agent,
         status: "completed",
-        detail:
-          agent.id === "weather"
-            ? "NW wind detected at 24 km/h"
-            : agent.id === "medical"
-              ? "3 hospitals available"
-              : agent.id === "infrastructure"
-                ? "Primary evacuation route confirmed"
-                : "3 response scenarios evaluated",
+        detail: details[agent.id as keyof AgentDetailsById],
       };
     }
 
@@ -171,7 +165,11 @@ function getAgents(stage: IncidentStage): IncidentAgent[] {
       };
     }
 
-    return agent;
+    return {
+      ...agent,
+      status: "waiting",
+      detail: "Waiting",
+    };
   });
 }
 
@@ -254,29 +252,68 @@ const decisionEvidence: DecisionEvidence[] = [
   },
 ];
 
-export function createIncidentState(stage: IncidentStage): IncidentState {
-  const routeVisible =
-    stage === "traffic" ||
-    stage === "simulation" ||
-    stage === "decision" ||
-    stage === "completed";
+type AgentDetailsById = Record<"weather" | "medical" | "infrastructure" | "risk", string>;
 
-  const simulationReady =
-    stage === "decision" || stage === "completed";
+function getAgentDetails(incidentType?: string): AgentDetailsById {
+  switch (incidentType) {
+    case "FIRE":
+      return {
+        weather: "Wind speed and fire conditions analysed",
+        medical: "Hospital capacity confirmed",
+        infrastructure: "Evacuation routes verified",
+        risk: "Extreme fire spread risk detected",
+      };
 
-  const decisionReady =
-    stage === "decision" || stage === "completed";
+    case "FLOOD":
+      return {
+        weather: "Rainfall and catchment conditions analysed",
+        medical: "Community health support assessed",
+        infrastructure: "Road and bridge access evaluated",
+        risk: "Flood extent and isolation risk predicted",
+      };
+
+    case "HAZMAT":
+      return {
+        weather: "Wind dispersion conditions analysed",
+        medical: "Decontamination capability confirmed",
+        infrastructure: "Exclusion perimeter established",
+        risk: "Chemical plume exposure risk predicted",
+      };
+
+    case "MEDICAL":
+      return {
+        weather: "Visibility and scene conditions assessed",
+        medical: "Trauma centre capacity confirmed",
+        infrastructure: "Emergency access routes verified",
+        risk: "Mass casualty escalation risk analysed",
+      };
+
+    default:
+      return {
+        weather: "Weather conditions analysed",
+        medical: "Medical readiness assessed",
+        infrastructure: "Critical infrastructure checked",
+        risk: "Operational risk analysed",
+      };
+  }
+}
+
+export function createIncidentState(stage: IncidentStage, incidentType?: string): IncidentState {
+  const routeVisible = stage === "traffic" || stage === "simulation" || stage === "decision" || stage === "completed";
+  const simulationReady = stage === "decision" || stage === "completed";
+  const decisionReady = stage === "decision" || stage === "completed";
 
   return {
     stage,
     progress: progressByStage[stage],
     confidence: confidenceByStage[stage],
     timeline: getVisibleTimeline(stage),
-    agents: getAgents(stage),
+    agents: getAgents(stage, incidentType),
     fireRadius: fireRadiusByStage[stage],
     routeVisible,
     simulationReady,
     decisionReady,
+
     recommendation: decisionReady
       ? "Evacuate Zone B first and deploy 18 emergency response units."
       : stage === "simulation"
@@ -284,6 +321,7 @@ export function createIncidentState(stage: IncidentStage): IncidentState {
         : stage === "idle"
           ? "Waiting for incident signal."
           : "Specialist agents are collecting and validating evidence.",
+
     mapStatus: decisionReady
       ? "Optimal route found · ETA 31 min"
       : routeVisible
@@ -291,9 +329,11 @@ export function createIncidentState(stage: IncidentStage): IncidentState {
         : stage === "idle"
           ? "Waiting for incident signal"
           : "Monitoring incident conditions",
+
     scenarios,
     decisionMetrics,
     decisionEvidence,
+
     recommendedAction: "Evacuate Zone B first, deploy 18 response units, and keep medical teams on standby for the next 45 minutes.",
   };
 }

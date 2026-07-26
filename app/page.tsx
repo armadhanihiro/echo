@@ -13,7 +13,7 @@ import { useIncidentEngine } from "@/hooks/useIncidentEngine";
 import { useIncidents } from "@/hooks/useIncidents";
 import { useIncidentIntelligence } from "@/hooks/useIncidentIntelligence";
 
-import type { DecisionScenario } from "@/types/incident";
+import type { DecisionScenario, DecisionMetric } from "@/types/incident";
 
 import type { SimulationScenarioDto } from "@/lib/api/intelligence";
 
@@ -39,6 +39,84 @@ function mapSimulationScenarios(scenarios: SimulationScenarioDto[], selectedScen
     recommended: scenario.id === selectedScenario,
     color: colors[index] ?? "bg-cyan-400",
   }));
+}
+
+function clampScore(value: number): number {
+  return Math.min(Math.max(Math.round(value), 0), 100);
+}
+
+function getRiskScore(risk: string): number {
+  switch (risk.toUpperCase()) {
+    case "LOW":
+      return 20;
+    case "MEDIUM":
+      return 50;
+    case "HIGH":
+      return 75;
+    case "CRITICAL":
+    case "VERY_HIGH":
+      return 90;
+    default:
+      return 60;
+  }
+}
+
+function getResourceFitScore(resources: string): number {
+  switch (resources.toUpperCase()) {
+    case "LOW":
+      return 95;
+    case "MEDIUM":
+      return 85;
+    case "HIGH":
+      return 72;
+    case "VERY_HIGH":
+      return 58;
+    default:
+      return 70;
+  }
+}
+
+function getResponseTimeScore(eta: string): number {
+  const hours = Number.parseFloat(eta);
+
+  if (!Number.isFinite(hours)) {
+    return 60;
+  }
+
+  return clampScore(100 - hours * 5);
+}
+
+function buildDecisionMetrics(scenario: DecisionScenario | null): DecisionMetric[] {
+  if (!scenario) {
+    return [];
+  }
+
+  const operationalRisk = getRiskScore(scenario.risk);
+
+  return [
+    {
+      label: "Safety",
+      value: clampScore(
+        scenario.confidence - operationalRisk * 0.1,
+      ),
+      color: "bg-emerald-400",
+    },
+    {
+      label: "Response Time",
+      value: getResponseTimeScore(scenario.eta),
+      color: "bg-cyan-400",
+    },
+    {
+      label: "Resource Fit",
+      value: getResourceFitScore(scenario.resources),
+      color: "bg-blue-400",
+    },
+    {
+      label: "Operational Risk",
+      value: operationalRisk,
+      color: "bg-amber-400",
+    },
+  ];
 }
 
 export default function HomePage() {
@@ -81,6 +159,7 @@ export default function HomePage() {
       : [];
 
   const recommendedScenario = simulationScenarios.find((scenario) => scenario.recommended) ?? simulationScenarios[0] ?? null;
+  const decisionMetrics = buildDecisionMetrics(recommendedScenario);
   const simulationReady = incidentState.simulationReady && hasSimulation;
   const decisionReady = incidentState.decisionReady && Boolean(activeIntelligence?.decision);
   const recommendedAction = activeIntelligence?.decision?.action ?? incidentState.recommendedAction;
@@ -118,7 +197,6 @@ export default function HomePage() {
   }
 
   const deployedResources = activeIntelligence?.resources ?? [];
-
   const dashboardLoading = incidentsLoading || intelligenceLoading;
 
   function handleStartIncident() {
@@ -231,7 +309,11 @@ export default function HomePage() {
             <DecisionIntelligence
               decisionReady={decisionReady}
               progress={incidentState.progress}
-              metrics={incidentState.decisionMetrics}
+              metrics={
+                decisionMetrics.length > 0
+                  ? decisionMetrics
+                  : incidentState.decisionMetrics
+              }
               evidence={decisionEvidence}
               recommendedAction={
                 intelligenceLoading

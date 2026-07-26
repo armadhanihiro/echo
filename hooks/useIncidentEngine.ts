@@ -332,7 +332,7 @@ export function useIncidentEngine(incident: IncidentDto | null) {
 );
 
 const incidentState = useMemo(() => {
-  const baseState = createIncidentState(stage);
+  const baseState = createIncidentState(stage, incident?.type);
 
   const stageIndex = incidentFlow.indexOf(stage);
 
@@ -351,7 +351,7 @@ const incidentState = useMemo(() => {
       visibleTimelineCount,
     ),
   };
-}, [stage, incidentTimeline]);
+}, [stage, incidentTimeline, incident?.type]);
 
   const isRunning = stage !== "idle" && stage !== "completed";
 
