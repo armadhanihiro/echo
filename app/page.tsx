@@ -327,8 +327,21 @@ export default function HomePage() {
             />
 
             <AskEcho
-              incidentTitle={selectedIncident?.title}
-              incidentType={selectedIncident?.type}
+              incident={
+                selectedIncident
+                  ? {
+                      id: selectedIncident.id,
+                      title: selectedIncident.title,
+                      type: selectedIncident.type,
+                      severity: selectedIncident.severity,
+                      status: selectedIncident.status,
+                      location: selectedIncident.locationName,
+                      description: selectedIncident.description,
+                      resourceCount: deployedResources.length,
+                      recommendation: commanderRecommendation,
+                    }
+                  : null
+              }
             />
           </section>
         </div>

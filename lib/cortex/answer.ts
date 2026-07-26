@@ -16,40 +16,84 @@ export type GroundedAnswerResult = {
   sources: CortexSearchResult[];
 };
 
-function buildGroundedPrompt(question: string, sources: CortexSearchResult[]): string {
-    const context = sources.map((source, index) => `
-        SOURCE ${index + 1}
-        DOC_ID: ${source.DOC_ID}
-        TITLE: ${source.TITLE}
-        DOC_TYPE: ${source.DOC_TYPE}
-        CONTENT: ${source.CONTENT}
-    `).join("\n---\n");
+export type IncidentAnswerContext = {
+  id: string | null;
+  title: string | null;
+  type: string | null;
+  severity: string | null;
+  status: string | null;
+  location: string | null;
+};
 
-    return `
-        You are ECHO, an emergency decision-support assistant.
+function buildGroundedPrompt(question: string, sources: CortexSearchResult[], incident: IncidentAnswerContext | null): string {
+  const context = sources.map((source, index) => 
+    `
+      SOURCE ${index + 1}
+      DOC_ID: ${source.DOC_ID}
+      TITLE: ${source.TITLE}
+      DOC_TYPE: ${source.DOC_TYPE}
+      CONTENT:
+      ${source.CONTENT}
+    `,
+  ).join("\n---\n");
 
-        Answer the operator's question using only the supplied emergency SOP sources.
+  const incidentContext = incident
+  ? 
+    `
+      CURRENT INCIDENT:
+      ID: ${incident.id ?? "Unknown"}
+      TITLE: ${incident.title ?? "Unknown"}
+      TYPE: ${incident.type ?? "Unknown"}
+      SEVERITY: ${incident.severity ?? "Unknown"}
+      STATUS: ${incident.status ?? "Unknown"}
+      LOCATION: ${incident.location ?? "Unknown"}
+    `
+  : 
+    `
+      CURRENT INCIDENT:
+      No incident context was supplied.
+    `;
 
-        Rules:
-        - Do not use outside knowledge.
-        - Do not invent procedures, thresholds, agencies, or facts.
-        - If the supplied sources are insufficient, say:
+  return `
+      You are ECHO, an emergency decision-support assistant.
+
+      Answer the operator's question using only the supplied emergency SOP sources.
+
+      Rules:
+      - Use the current incident context to make the answer relevant.
+      - Use only facts and procedures contained in the SOP sources.
+      - Do not invent procedures, thresholds, agencies, or operational facts.
+      - Do not assume that incident context is itself an SOP instruction.
+      - If the sources are insufficient, say:
         "The available SOP sources do not contain enough information to answer this safely."
-        - Keep the answer concise, operational, and easy to scan.
-        - Include source references using DOC_ID in square brackets, for example [DOC-004].
-        - Do not claim to replace the Incident Controller or emergency services.
-        - Start with the recommended action, then provide brief supporting reasons.
+      - Keep the answer concise, operational, and easy to scan.
+      - Include source references using DOC_ID in square brackets, such as [DOC-004].
+      - Do not claim to replace the Incident Controller or emergency services.
+      - Start with the recommended action, followed by brief supporting reasons.
 
-        OPERATOR QUESTION:
-        ${question}
+      ${incidentContext}
 
-        SOP SOURCES:
-        ${context}
-        `.trim();
+      OPERATOR QUESTION:
+      ${question}
+
+      SOP SOURCES:
+      ${context}
+    `.trim();
 }
 
-export async function generateGroundedAnswer(question: string) : Promise<GroundedAnswerResult> {
-  const sources = await searchSopDocuments(question, 3);
+export async function generateGroundedAnswer(question: string, incident: IncidentAnswerContext | null): Promise<GroundedAnswerResult> {
+  const retrievalQuery = incident
+    ? [
+        question,
+        incident.type,
+        incident.title,
+        incident.location,
+      ]
+        .filter(Boolean)
+        .join(" ")
+    : question;
+
+  const sources = await searchSopDocuments(retrievalQuery, 3);
 
   if (sources.length === 0) {
     return {
@@ -58,7 +102,7 @@ export async function generateGroundedAnswer(question: string) : Promise<Grounde
     };
   }
 
-  const prompt = buildGroundedPrompt(question, sources);
+  const prompt = buildGroundedPrompt(question, sources, incident);
   const rows = await executeQuery<AiCompleteRow>(cortexQueries.groundedAnswer, [prompt]);
 
   return {

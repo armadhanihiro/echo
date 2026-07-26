@@ -3,9 +3,23 @@ import { generateGroundedAnswer } from "@/lib/cortex/answer";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type IncidentContextRequest = {
+  id?: unknown;
+  title?: unknown;
+  type?: unknown;
+  severity?: unknown;
+  status?: unknown;
+  location?: unknown;
+};
+
 type AnswerRequestBody = {
   question?: unknown;
+  incident?: IncidentContextRequest | null;
 };
+
+function parseOptionalString(value: unknown): string | null {
+    return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
 
 export async function POST(request: Request) {
     try {
@@ -34,7 +48,18 @@ export async function POST(request: Request) {
             );
         }
 
-        const result = await generateGroundedAnswer(question);
+        const incident = body.incident
+            ? {
+                id: parseOptionalString(body.incident.id),
+                title: parseOptionalString(body.incident.title),
+                type: parseOptionalString(body.incident.type),
+                severity: parseOptionalString(body.incident.severity),
+                status: parseOptionalString(body.incident.status),
+                location: parseOptionalString(body.incident.location),
+                }
+            : null;
+
+        const result = await generateGroundedAnswer(question, incident);
 
         return Response.json({
             data: result,

@@ -50,7 +50,7 @@ type GroundedAnswerApiResponse = {
   data: GroundedAnswerResponse;
 };
 
-export async function askEcho(question: string) : Promise<GroundedAnswerResponse> {
+export async function askEcho(question: string, incident: EchoIncidentContext | null): Promise<GroundedAnswerResponse> {
   const response = await fetch("/api/cortex/answer", {
     method: "POST",
     headers: {
@@ -58,15 +58,28 @@ export async function askEcho(question: string) : Promise<GroundedAnswerResponse
     },
     body: JSON.stringify({
       question,
+      incident,
     }),
   });
 
   if (!response.ok) {
     throw new Error(
-        "Unable to generate a grounded ECHO response.",
+      "Unable to generate a grounded ECHO response.",
     );
   }
 
   const result = (await response.json()) as GroundedAnswerApiResponse;
   return result.data;
 }
+
+export type EchoIncidentContext = {
+  id: string;
+  title: string;
+  type: string;
+  severity: string;
+  status: string;
+  location: string | null;
+  description?: string | null;
+  resourceCount?: number;
+  recommendation?: string | null;
+};
