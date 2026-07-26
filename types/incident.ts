@@ -37,12 +37,11 @@ export type IncidentState = {
   timeline: TimelineEvent[];
   agents: IncidentAgent[];
   scenarios: DecisionScenario[];
-  fireRadius: number;
+  incidentRadius: number;
   routeVisible: boolean;
   simulationReady: boolean;
   decisionReady: boolean;
   recommendation: string;
-  mapStatus: string;
   decisionMetrics: DecisionMetric[];
   decisionEvidence: DecisionEvidence[];
   recommendedAction: string;

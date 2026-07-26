@@ -3,9 +3,8 @@
 import dynamic from "next/dynamic";
 
 type MapPanelProps = {
-  fireRadius: number;
+  incidentRadius: number;
   routeVisible: boolean;
-  mapStatus: string;
   decisionReady: boolean;
 
   incidentTitle: string;

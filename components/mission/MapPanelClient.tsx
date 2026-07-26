@@ -17,9 +17,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import L from "leaflet";
 
 type MapPanelProps = {
-  fireRadius: number;
+  incidentRadius: number;
   routeVisible: boolean;
-  mapStatus: string;
   decisionReady: boolean;
 
   incidentTitle: string;
@@ -131,8 +130,94 @@ function MapRecenter({ latitude, longitude }: MapRecenterProps) {
   return null;
 }
 
-export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionReady, latitude, longitude, incidentTitle, incidentType, severity, locationName, metadata, resources }: MapPanelProps) {
-  const hasIncident = fireRadius > 1800;
+function getIncidentZoneAppearance(type: string) {
+  switch (type) {
+    case "FIRE":
+      return {
+        stroke: "#ef4444",
+        fill: "#ef4444",
+        label: "Fire Impact Zone",
+        routeLabel: "Evacuation Route",
+      };
+
+    case "FLOOD":
+      return {
+        stroke: "#3b82f6",
+        fill: "#3b82f6",
+        label: "Flood Impact Zone",
+        routeLabel: "Safe Access Route",
+      };
+
+    case "HAZMAT":
+      return {
+        stroke: "#eab308",
+        fill: "#eab308",
+        label: "Hazard Exclusion Zone",
+        routeLabel: "Exclusion Route",
+      };
+
+    case "MEDICAL":
+      return {
+        stroke: "#10b981",
+        fill: "#10b981",
+        label: "Medical Response Zone",
+        routeLabel: "Emergency Access Route",
+      };
+
+    default:
+      return {
+        stroke: "#8b5cf6",
+        fill: "#8b5cf6",
+        label: "Incident Zone",
+        routeLabel: "Response Corridor",
+      };
+  }
+}
+
+function getDynamicMapStatus(incidentType: string, routeVisible: boolean, decisionReady: boolean): string {
+  if (decisionReady) {
+    switch (incidentType) {
+      case "FIRE":
+        return "Evacuation route confirmed";
+
+      case "FLOOD":
+        return "Safe access route confirmed";
+
+      case "HAZMAT":
+        return "Exclusion perimeter confirmed";
+
+      case "MEDICAL":
+        return "Emergency access route confirmed";
+
+      default:
+        return "Response corridor confirmed";
+    }
+  }
+
+  if (routeVisible) {
+    switch (incidentType) {
+      case "FIRE":
+        return "Analysing evacuation routes";
+
+      case "FLOOD":
+        return "Assessing safe access routes";
+
+      case "HAZMAT":
+        return "Mapping exclusion perimeter";
+
+      case "MEDICAL":
+        return "Assessing emergency access";
+
+      default:
+        return "Analysing response corridor";
+    }
+  }
+
+  return "Waiting for incident signal";
+}
+
+export function MapPanelClient({ incidentRadius, routeVisible, decisionReady, latitude, longitude, incidentTitle, incidentType, severity, locationName, metadata, resources }: MapPanelProps) {
+  const hasIncident = incidentRadius > 1800;
 
   const center: [number, number] = [
     latitude ?? -34.919,
@@ -201,6 +286,8 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
   }
 
   const appearance = getIncidentAppearance(incidentType);
+  const zoneAppearance = getIncidentZoneAppearance(incidentType);
+  const dynamicMapStatus = getDynamicMapStatus(incidentType, routeVisible, decisionReady);
 
   const stats = [
     {
@@ -305,10 +392,10 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
 
             <Circle
               center={center}
-              radius={fireRadius}
+              radius={incidentRadius}
               pathOptions={{
-                color: "#ef4444",
-                fillColor: "#ef4444",
+                color: zoneAppearance.stroke,
+                fillColor: zoneAppearance.fill,
                 fillOpacity: hasIncident ? 0.24 : 0.08,
                 weight: 2,
               }}
@@ -382,8 +469,11 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
             </p>
             <div className="grid gap-2 text-xs text-slate-300">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-red-400" />
-                Incident Zone
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: zoneAppearance.stroke }}
+                />
+                {zoneAppearance.label}
               </div>
               <div className="flex items-center gap-2">
                 <span className="flex h-4 w-4 items-center justify-center text-[11px]">
@@ -407,7 +497,7 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-[2px] w-4 rounded-full bg-cyan-300" />
-                Evacuation Route
+                {zoneAppearance.routeLabel}
               </div>
             </div>
           </div>
@@ -420,7 +510,7 @@ export function MapPanelClient({ fireRadius, routeVisible, mapStatus, decisionRe
                   : "border-slate-700 bg-[#131C2E]/90 text-slate-300"
           }`}>
             <Route size={14} />
-            {mapStatus}
+            {dynamicMapStatus}
           </div>
         </div>
       </div>

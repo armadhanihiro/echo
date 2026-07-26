@@ -241,9 +241,8 @@ export default function HomePage() {
               >
                 <Timeline
                   events={incidentState.timeline}
-                  incidentTitle={
-                    selectedIncident?.title ?? "No active incident"
-                  }
+                  incidentTitle={selectedIncident?.title ?? "No active incident"}
+                  incidentType={selectedIncident?.type ?? "OTHER"}
                   isLoading={incidentsLoading}
                   isSwitching={intelligenceLoading}
                   incidents={incidents}
@@ -252,9 +251,8 @@ export default function HomePage() {
                 />
 
                 <MapPanel
-                  fireRadius={incidentState.fireRadius}
+                  incidentRadius={incidentState.incidentRadius}
                   routeVisible={incidentState.routeVisible}
-                  mapStatus={incidentState.mapStatus}
                   decisionReady={incidentState.decisionReady}
                   incidentTitle={selectedIncident?.title ?? "Loading incident"}
                   incidentType={selectedIncident?.type ?? "UNKNOWN"}

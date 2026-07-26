@@ -90,42 +90,6 @@ const stageOrder: IncidentStage[] = [
   "completed",
 ];
 
-const scenarios = [
-  {
-    id: "scenario-a",
-    name: "Scenario A",
-    strategy: "Immediate Evacuation",
-    risk: "Medium",
-    eta: "30 min",
-    resources: "18 units",
-    confidence: 94,
-    recommended: true,
-    color: "bg-emerald-400",
-  },
-  {
-    id: "scenario-b",
-    name: "Scenario B",
-    strategy: "Partial Evacuation",
-    risk: "High",
-    eta: "20 min",
-    resources: "12 units",
-    confidence: 82,
-    recommended: false,
-    color: "bg-amber-400",
-  },
-  {
-    id: "scenario-c",
-    name: "Scenario C",
-    strategy: "Delayed Response",
-    risk: "Critical",
-    eta: "45 min",
-    resources: "25 units",
-    confidence: 61,
-    recommended: false,
-    color: "bg-red-400",
-  },
-];
-
 function getVisibleTimeline(stage: IncidentStage) {
   const currentIndex = stageOrder.indexOf(stage);
 
@@ -195,7 +159,7 @@ const confidenceByStage: Record<IncidentStage, number> = {
   completed: 97.8,
 };
 
-const fireRadiusByStage: Record<IncidentStage, number> = {
+const incidentRadiusByStage: Record<IncidentStage, number> = {
   idle: 1800,
   incident: 2800,
   weather: 3800,
@@ -226,29 +190,6 @@ const decisionMetrics: DecisionMetric[] = [
     label: "Operational Risk",
     value: 28,
     color: "bg-amber-400",
-  },
-];
-
-const decisionEvidence: DecisionEvidence[] = [
-  {
-    id: "casualty-risk",
-    label: "Lowest casualty risk across simulated scenarios.",
-    tone: "emerald",
-  },
-  {
-    id: "weather-window",
-    label: "Evacuation can be completed within the safe weather window.",
-    tone: "cyan",
-  },
-  {
-    id: "resource-capacity",
-    label: "Required resources are available within current capacity.",
-    tone: "blue",
-  },
-  {
-    id: "operational-risk",
-    label: "Operational risk remains manageable under current conditions.",
-    tone: "amber",
   },
 ];
 
@@ -298,10 +239,180 @@ function getAgentDetails(incidentType?: string): AgentDetailsById {
   }
 }
 
+type IncidentFallbackContent = {
+  recommendation: string;
+  simulationMessage: string;
+  recommendedAction: string;
+};
+
+function getIncidentFallbackContent(incidentType?: string): IncidentFallbackContent {
+  switch (incidentType) {
+    case "FIRE":
+      return {
+        recommendation: "Prioritise evacuation of threatened communities and deploy fire suppression resources.",
+        simulationMessage: "Comparing evacuation, containment, and suppression strategies.",
+        recommendedAction: "Issue an emergency warning, begin evacuation of the threatened corridor, and deploy suppression units.",
+      };
+
+    case "FLOOD":
+      return {
+        recommendation: "Move vulnerable residents to higher ground and deploy flood response resources.",
+        simulationMessage: "Comparing evacuation, levee protection, and safe-access strategies.",
+        recommendedAction: "Close affected low-lying roads, evacuate vulnerable areas, and deploy SES flood-response teams.",
+      };
+
+    case "HAZMAT":
+      return {
+        recommendation: "Establish an exclusion zone and deploy containment and decontamination resources.",
+        simulationMessage: "Comparing containment, evacuation, and plume-control strategies.",
+        recommendedAction: "Establish the exclusion perimeter, approach from upwind, and deploy hazmat and decontamination teams.",
+      };
+
+    case "MEDICAL":
+      return {
+        recommendation: "Secure emergency access and coordinate triage, ambulance, and hospital capacity.",
+        simulationMessage: "Comparing triage, rescue access, and casualty transport strategies.",
+        recommendedAction: "Secure the incident scene, establish triage, and coordinate casualty transport to available trauma centres.",
+      };
+
+    default:
+      return {
+        recommendation: "Coordinate emergency resources and prioritise public safety.",
+        simulationMessage: "Comparing available emergency response strategies.",
+        recommendedAction: "Secure the incident area and deploy the most appropriate available response resources.",
+      };
+  }
+}
+
+function getDecisionEvidence(incidentType?: string): DecisionEvidence[] {
+  switch (incidentType) {
+    case "FIRE":
+      return [
+        {
+          id: "fire-safety",
+          label: "Evacuation reduces exposure to the projected fire-spread corridor.",
+          tone: "emerald",
+        },
+        {
+          id: "fire-weather",
+          label: "Current wind and fire-behaviour conditions support immediate action.",
+          tone: "cyan",
+        },
+        {
+          id: "fire-resources",
+          label: "Required suppression and evacuation resources are available.",
+          tone: "blue",
+        },
+        {
+          id: "fire-risk",
+          label: "Operational risk remains manageable within the current response window.",
+          tone: "amber",
+        },
+      ];
+
+    case "FLOOD":
+      return [
+        {
+          id: "flood-safety",
+          label: "Early movement reduces isolation risk in low-lying communities.",
+          tone: "emerald",
+        },
+        {
+          id: "flood-conditions",
+          label: "Catchment and river-level analysis indicates continued flood exposure.",
+          tone: "cyan",
+        },
+        {
+          id: "flood-resources",
+          label: "Flood-response personnel and safe-access resources are available.",
+          tone: "blue",
+        },
+        {
+          id: "flood-risk",
+          label: "Road closure and access risks increase if response is delayed.",
+          tone: "amber",
+        },
+      ];
+
+    case "HAZMAT":
+      return [
+        {
+          id: "hazmat-safety",
+          label: "An exclusion zone limits public and responder exposure.",
+          tone: "emerald",
+        },
+        {
+          id: "hazmat-dispersion",
+          label: "Wind and dispersion analysis supports the proposed perimeter.",
+          tone: "cyan",
+        },
+        {
+          id: "hazmat-resources",
+          label: "Hazmat containment and decontamination capability is available.",
+          tone: "blue",
+        },
+        {
+          id: "hazmat-risk",
+          label: "Exposure risk remains elevated until containment is established.",
+          tone: "amber",
+        },
+      ];
+
+    case "MEDICAL":
+      return [
+        {
+          id: "medical-safety",
+          label: "Rapid triage and casualty transport improve patient outcomes.",
+          tone: "emerald",
+        },
+        {
+          id: "medical-capacity",
+          label: "Trauma-centre and ambulance capacity has been assessed.",
+          tone: "cyan",
+        },
+        {
+          id: "medical-access",
+          label: "Emergency access routes can support coordinated casualty movement.",
+          tone: "blue",
+        },
+        {
+          id: "medical-risk",
+          label: "Delay increases the risk of casualty deterioration and scene escalation.",
+          tone: "amber",
+        },
+      ];
+
+    default:
+      return [
+        {
+          id: "general-safety",
+          label: "The selected response prioritises public and responder safety.",
+          tone: "emerald",
+        },
+        {
+          id: "general-evidence",
+          label: "Available operational evidence supports the recommended action.",
+          tone: "cyan",
+        },
+        {
+          id: "general-resources",
+          label: "Required response resources are currently available.",
+          tone: "blue",
+        },
+        {
+          id: "general-risk",
+          label: "Operational risk remains manageable under current conditions.",
+          tone: "amber",
+        },
+      ];
+  }
+}
+
 export function createIncidentState(stage: IncidentStage, incidentType?: string): IncidentState {
   const routeVisible = stage === "traffic" || stage === "simulation" || stage === "decision" || stage === "completed";
   const simulationReady = stage === "decision" || stage === "completed";
   const decisionReady = stage === "decision" || stage === "completed";
+  const fallbackContent = getIncidentFallbackContent(incidentType);
 
   return {
     stage,
@@ -309,31 +420,23 @@ export function createIncidentState(stage: IncidentStage, incidentType?: string)
     confidence: confidenceByStage[stage],
     timeline: getVisibleTimeline(stage),
     agents: getAgents(stage, incidentType),
-    fireRadius: fireRadiusByStage[stage],
+    incidentRadius: incidentRadiusByStage[stage],
     routeVisible,
     simulationReady,
     decisionReady,
 
     recommendation: decisionReady
-      ? "Evacuate Zone B first and deploy 18 emergency response units."
+      ? fallbackContent.recommendation
       : stage === "simulation"
-        ? "Comparing response scenarios and operational trade-offs."
+        ? fallbackContent.simulationMessage
         : stage === "idle"
           ? "Waiting for incident signal."
           : "Specialist agents are collecting and validating evidence.",
 
-    mapStatus: decisionReady
-      ? "Optimal route found · ETA 31 min"
-      : routeVisible
-        ? "Evacuation route analysis running"
-        : stage === "idle"
-          ? "Waiting for incident signal"
-          : "Monitoring incident conditions",
-
-    scenarios,
+    scenarios: [],
     decisionMetrics,
-    decisionEvidence,
+    decisionEvidence: getDecisionEvidence(incidentType),
 
-    recommendedAction: "Evacuate Zone B first, deploy 18 response units, and keep medical teams on standby for the next 45 minutes.",
+    recommendedAction: fallbackContent.recommendedAction,
   };
 }

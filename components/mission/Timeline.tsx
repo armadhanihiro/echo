@@ -3,12 +3,16 @@
 import type { TimelineEvent } from "@/types/incident";
 import {
   Activity,
+  AlertTriangle,
+  Ambulance,
   CloudSun,
   Flame,
   Hospital,
   Radio,
   Route,
+  ShieldAlert,
   ShieldCheck,
+  Waves,
 } from "lucide-react";
 
 type IncidentOption = {
@@ -21,11 +25,12 @@ type IncidentOption = {
 type TimelineProps = {
   events: TimelineEvent[];
   incidentTitle: string;
+  incidentType: string;
   isLoading?: boolean;
+  isSwitching?: boolean;
   incidents: IncidentOption[];
   selectedIncidentId: string | null;
   onSelectIncident: (incidentId: string) => void;
-  isSwitching?: boolean;
 };
 
 const iconByStage = {
@@ -46,7 +51,40 @@ const colorByStage = {
   decision: "text-emerald-300",
 } as const;
 
-export function Timeline({ events, incidentTitle, isLoading = false, isSwitching = false, incidents, selectedIncidentId, onSelectIncident }: TimelineProps) {
+function getIncidentTimelineIcon(type: string) {
+  switch (type) {
+    case "FIRE":
+      return Flame;
+    case "FLOOD":
+      return Waves;
+    case "HAZMAT":
+      return ShieldAlert;
+    case "MEDICAL":
+      return Ambulance;
+    default:
+      return AlertTriangle;
+  }
+}
+
+function getIncidentTimelineColor(type: string) {
+  switch (type) {
+    case "FIRE":
+      return "text-red-300";
+    case "FLOOD":
+      return "text-blue-300";
+    case "HAZMAT":
+      return "text-yellow-300";
+    case "MEDICAL":
+      return "text-emerald-300";
+    default:
+      return "text-slate-300";
+  }
+}
+
+export function Timeline({ events, incidentTitle, incidentType, isLoading = false, isSwitching = false, incidents, selectedIncidentId, onSelectIncident }: TimelineProps) {
+  const IncidentIcon = getIncidentTimelineIcon(incidentType);
+  const incidentIconColor = getIncidentTimelineColor(incidentType);
+  
   return (
     <section className="rounded-2xl border border-slate-800 bg-[#131C2E] p-6">
       <div className="mb-5 flex items-start justify-between">
@@ -104,11 +142,15 @@ export function Timeline({ events, incidentTitle, isLoading = false, isSwitching
         <div className="space-y-4">
           {events.map((event, index) => {
             const Icon =
-              iconByStage[event.stage as keyof typeof iconByStage] ?? Radio;
+              event.stage === "incident"
+                ? IncidentIcon
+                : iconByStage[event.stage as keyof typeof iconByStage] ?? Radio;
 
             const iconColor =
-              colorByStage[event.stage as keyof typeof colorByStage] ??
-              "text-slate-300";
+              event.stage === "incident"
+                ? incidentIconColor
+                : colorByStage[event.stage as keyof typeof colorByStage] ??
+                  "text-slate-300";
 
             const isLatest = index === events.length - 1;
 
