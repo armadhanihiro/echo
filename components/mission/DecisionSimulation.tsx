@@ -8,9 +8,11 @@ type DecisionSimulationProps = {
   simulationReady: boolean;
   isLoading?: boolean;
   hasSimulation: boolean;
+  inspectedScenarioId: string | null;
+  onInspectScenario: (scenarioId: string) => void;
 };
 
-export function DecisionSimulation({ progress, scenarios, simulationReady, isLoading = false, hasSimulation }: DecisionSimulationProps) {
+export function DecisionSimulation({ progress, scenarios, simulationReady, isLoading = false, hasSimulation, inspectedScenarioId, onInspectScenario }: DecisionSimulationProps) {
   const hasStarted = progress > 0;
   const isSimulating = progress > 0 && progress < 100;
 
@@ -79,12 +81,21 @@ export function DecisionSimulation({ progress, scenarios, simulationReady, isLoa
       ) : (
         <div className="mt-5 grid grid-cols-3 gap-4">
           {scenarios.map((scenario) => (
-            <div
+            <button
               key={scenario.id}
-              className={`rounded-2xl border p-4 transition-all ${
-                scenario.recommended && simulationReady
-                  ? "border-emerald-500/40 bg-emerald-500/5"
-                  : "border-slate-800 bg-[#1A2438]"
+              type="button"
+              disabled={!simulationReady}
+              onClick={() => onInspectScenario(scenario.id)}
+              className={`rounded-2xl border p-4 text-left transition-all ${
+                inspectedScenarioId === scenario.id
+                  ? "border-cyan-400/60 bg-cyan-500/5 shadow-[0_0_24px_rgba(34,211,238,0.08)]"
+                  : scenario.recommended && simulationReady
+                    ? "border-emerald-500/40 bg-emerald-500/5"
+                    : "border-slate-800 bg-[#1A2438]"
+              } ${
+                simulationReady
+                  ? "cursor-pointer hover:border-cyan-500/30"
+                  : "cursor-default"
               }`}
             >
               <div className="flex items-start justify-between">
@@ -104,11 +115,20 @@ export function DecisionSimulation({ progress, scenarios, simulationReady, isLoa
                   )}
                 </div>
 
-                {scenario.recommended && simulationReady && (
-                  <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-[10px] font-semibold text-emerald-300">
-                    Recommended
-                  </span>
-                )}
+                <div className="flex flex-col items-end gap-2">
+                  {scenario.recommended && simulationReady && (
+                    <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-[10px] font-semibold text-emerald-300">
+                      Recommended
+                    </span>
+                  )}
+
+                  {inspectedScenarioId === scenario.id &&
+                    simulationReady && (
+                      <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[10px] font-semibold text-cyan-300">
+                        Viewing Tradeoffs
+                      </span>
+                    )}
+                </div>
               </div>
 
               {!hasStarted ? (
@@ -164,7 +184,7 @@ export function DecisionSimulation({ progress, scenarios, simulationReady, isLoa
                   </div>
                 </>
               )}
-            </div>
+            </button>
           ))}
         </div>
       )}

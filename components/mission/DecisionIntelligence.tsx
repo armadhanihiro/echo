@@ -1,9 +1,6 @@
 "use client";
 
-import type {
-  DecisionEvidence,
-  DecisionMetric,
-} from "@/types/incident";
+import type { DecisionEvidence, DecisionScenario } from "@/types/incident";
 import {
   CheckCircle2,
   Gauge,
@@ -15,11 +12,10 @@ import {
 type DecisionIntelligenceProps = {
   decisionReady: boolean;
   progress: number;
-  metrics: DecisionMetric[];
+  inspectedScenario: DecisionScenario | null;
+  recommendedScenario: DecisionScenario | null;
   evidence: DecisionEvidence[];
   recommendedAction: string;
-  selectedScenarioName: string;
-  selectedScenarioStrategy: string;
 };
 
 const iconByTone = {
@@ -36,7 +32,7 @@ const colorByTone = {
   amber: "text-amber-300",
 } as const;
 
-export function DecisionIntelligence({ decisionReady, progress, metrics, evidence, recommendedAction, selectedScenarioName, selectedScenarioStrategy }: DecisionIntelligenceProps) {
+export function DecisionIntelligence({ decisionReady, progress, inspectedScenario, recommendedScenario, evidence, recommendedAction }: DecisionIntelligenceProps) {
   const isAnalysing = progress > 0 && !decisionReady;
 
   return (
@@ -48,7 +44,9 @@ export function DecisionIntelligence({ decisionReady, progress, metrics, evidenc
           </p>
 
           <h2 className="mt-2 text-xl font-semibold text-white">
-            Why {selectedScenarioName} was selected
+            {inspectedScenario?.recommended
+              ? `Why ${inspectedScenario.name} was selected`
+              : `Tradeoff analysis — ${inspectedScenario?.name ?? "Scenario"}`}
           </h2>
         </div>
 
@@ -72,8 +70,26 @@ export function DecisionIntelligence({ decisionReady, progress, metrics, evidenc
       <div className="mt-5 grid grid-cols-[1.1fr_0.9fr] gap-5">
         <div className="rounded-2xl border border-slate-800 bg-[#0B1220] p-5">
           <p className="text-sm font-semibold text-white">
-            {selectedScenarioName}: {selectedScenarioStrategy}
+            {inspectedScenario
+              ? `${inspectedScenario.name}: ${inspectedScenario.strategy}`
+              : "No scenario selected"}
           </p>
+
+          {inspectedScenario &&
+            recommendedScenario &&
+            inspectedScenario.id !==
+              recommendedScenario.id && (
+              <div className="mt-3 rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-3 py-2">
+                <p className="text-xs leading-5 text-cyan-200">
+                  Comparing against recommended{" "}
+                  <span className="font-semibold">
+                    {recommendedScenario.name}
+                  </span>
+                  . Confidence alone does not determine the final recommendation; 
+                  safety, resource fit, response time, and operational risk are also considered.
+                </p>
+              </div>
+            )}
 
           {!decisionReady ? (
             <div className="mt-5 rounded-xl border border-dashed border-slate-700 p-5 text-sm text-slate-500">
@@ -83,7 +99,7 @@ export function DecisionIntelligence({ decisionReady, progress, metrics, evidenc
             </div>
           ) : (
             <div className="mt-5 space-y-4">
-              {metrics.map((metric) => (
+              {inspectedScenario?.metrics.map((metric) => (
                 <div key={metric.label}>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-400">
@@ -140,8 +156,15 @@ export function DecisionIntelligence({ decisionReady, progress, metrics, evidenc
               <div className="mt-5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-emerald-300">
                   <CheckCircle2 size={16} />
-                  Recommended Action
+                  Official Recommended Action
                 </div>
+
+                {recommendedScenario && (
+                  <p className="mt-1 text-xs text-emerald-200/70">
+                    Based on {recommendedScenario.name}:{" "}
+                    {recommendedScenario.strategy}
+                  </p>
+                )}
 
                 <p className="mt-2 text-sm leading-6 text-slate-300">
                   {recommendedAction}

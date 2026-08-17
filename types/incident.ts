@@ -28,6 +28,7 @@ export type DecisionScenario = {
   confidence: number;
   recommended: boolean;
   color: string;
+  metrics: DecisionMetric[];
 };
 
 export type IncidentState = {

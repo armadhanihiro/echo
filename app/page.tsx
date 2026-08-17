@@ -17,6 +17,82 @@ import type { DecisionScenario, DecisionMetric } from "@/types/incident";
 
 import type { SimulationScenarioDto } from "@/lib/api/intelligence";
 
+import { useState } from "react";
+
+function buildScenarioMetrics(index: number, recommended: boolean): DecisionMetric[] {
+  const metricsByScenario: DecisionMetric[][] = [
+    [
+      {
+        label: "Safety",
+        value: 74,
+        color: "bg-emerald-400",
+      },
+      {
+        label: "Response Time",
+        value: 96,
+        color: "bg-cyan-400",
+      },
+      {
+        label: "Resource Fit",
+        value: 58,
+        color: "bg-blue-400",
+      },
+      {
+        label: "Operational Risk",
+        value: 78,
+        color: "bg-amber-400",
+      },
+    ],
+    [
+      {
+        label: "Safety",
+        value: 97,
+        color: "bg-emerald-400",
+      },
+      {
+        label: "Response Time",
+        value: 86,
+        color: "bg-cyan-400",
+      },
+      {
+        label: "Resource Fit",
+        value: 91,
+        color: "bg-blue-400",
+      },
+      {
+        label: "Operational Risk",
+        value: 28,
+        color: "bg-amber-400",
+      },
+    ],
+    [
+      {
+        label: "Safety",
+        value: 82,
+        color: "bg-emerald-400",
+      },
+      {
+        label: "Response Time",
+        value: 58,
+        color: "bg-cyan-400",
+      },
+      {
+        label: "Resource Fit",
+        value: 84,
+        color: "bg-blue-400",
+      },
+      {
+        label: "Operational Risk",
+        value: 49,
+        color: "bg-amber-400",
+      },
+    ],
+  ];
+
+  const fallback = recommended ? metricsByScenario[1] : metricsByScenario[0];
+  return metricsByScenario[index] ?? fallback;
+}
+
 function mapSimulationScenarios(scenarios: SimulationScenarioDto[], selectedScenario: string | null, overallConfidence: number): DecisionScenario[] {
   const colors = [
     "bg-emerald-400",
@@ -24,99 +100,23 @@ function mapSimulationScenarios(scenarios: SimulationScenarioDto[], selectedScen
     "bg-red-400",
   ];
 
-  return scenarios.map((scenario, index) => ({
-    id: scenario.id,
-    name: `Scenario ${String.fromCharCode(65 + index)}`,
-    strategy: scenario.name,
-    description: scenario.description,
-    risk: scenario.riskLevel,
-    eta:
-      scenario.estimatedHours !== null
-        ? `${scenario.estimatedHours} hrs`
-        : "N/A",
-    resources: scenario.resourceCost,
-    confidence: Math.max(overallConfidence - index * 8, 0),
-    recommended: scenario.id === selectedScenario,
-    color: colors[index] ?? "bg-cyan-400",
-  }));
-}
+  return scenarios.map((scenario, index) => {
+    const recommended = scenario.id === selectedScenario;
 
-function clampScore(value: number): number {
-  return Math.min(Math.max(Math.round(value), 0), 100);
-}
-
-function getRiskScore(risk: string): number {
-  switch (risk.toUpperCase()) {
-    case "LOW":
-      return 20;
-    case "MEDIUM":
-      return 50;
-    case "HIGH":
-      return 75;
-    case "CRITICAL":
-    case "VERY_HIGH":
-      return 90;
-    default:
-      return 60;
-  }
-}
-
-function getResourceFitScore(resources: string): number {
-  switch (resources.toUpperCase()) {
-    case "LOW":
-      return 95;
-    case "MEDIUM":
-      return 85;
-    case "HIGH":
-      return 72;
-    case "VERY_HIGH":
-      return 58;
-    default:
-      return 70;
-  }
-}
-
-function getResponseTimeScore(eta: string): number {
-  const hours = Number.parseFloat(eta);
-
-  if (!Number.isFinite(hours)) {
-    return 60;
-  }
-
-  return clampScore(100 - hours * 5);
-}
-
-function buildDecisionMetrics(scenario: DecisionScenario | null): DecisionMetric[] {
-  if (!scenario) {
-    return [];
-  }
-
-  const operationalRisk = getRiskScore(scenario.risk);
-
-  return [
-    {
-      label: "Safety",
-      value: clampScore(
-        scenario.confidence - operationalRisk * 0.1,
-      ),
-      color: "bg-emerald-400",
-    },
-    {
-      label: "Response Time",
-      value: getResponseTimeScore(scenario.eta),
-      color: "bg-cyan-400",
-    },
-    {
-      label: "Resource Fit",
-      value: getResourceFitScore(scenario.resources),
-      color: "bg-blue-400",
-    },
-    {
-      label: "Operational Risk",
-      value: operationalRisk,
-      color: "bg-amber-400",
-    },
-  ];
+    return {
+      id: scenario.id,
+      name: `Scenario ${String.fromCharCode(65 + index)}`,
+      strategy: scenario.name,
+      description: scenario.description,
+      risk: scenario.riskLevel,
+      eta: scenario.estimatedHours !== null ? `${scenario.estimatedHours} hrs` : "N/A",
+      resources: scenario.resourceCost,
+      confidence: Math.max(overallConfidence - index * 8, 0),
+      recommended,
+      color: colors[index] ?? "bg-cyan-400",
+      metrics: buildScenarioMetrics(index, recommended,),
+    };
+  });
 }
 
 export default function HomePage() {
@@ -157,9 +157,14 @@ export default function HomePage() {
           simulation.confidence,
         )
       : [];
-
+  
   const recommendedScenario = simulationScenarios.find((scenario) => scenario.recommended) ?? simulationScenarios[0] ?? null;
-  const decisionMetrics = buildDecisionMetrics(recommendedScenario);
+  const [ inspectedScenarioId, setInspectedScenarioId ] = useState<string | null>(null);
+  const effectiveInspectedScenarioId = inspectedScenarioId && simulationScenarios.some(
+    (scenario) => scenario.id === inspectedScenarioId) 
+      ? inspectedScenarioId 
+      : recommendedScenario?.id ?? null;
+  const inspectedScenario = simulationScenarios.find((scenario) => scenario.id === effectiveInspectedScenarioId) ?? recommendedScenario;
   const simulationReady = incidentState.simulationReady && hasSimulation;
   const decisionReady = incidentState.decisionReady && Boolean(activeIntelligence?.decision);
   const recommendedAction = activeIntelligence?.decision?.action ?? incidentState.recommendedAction;
@@ -302,28 +307,17 @@ export default function HomePage() {
               simulationReady={simulationReady}
               isLoading={intelligenceLoading}
               hasSimulation={hasSimulation}
+              inspectedScenarioId={effectiveInspectedScenarioId}
+              onInspectScenario={setInspectedScenarioId}
             />
 
             <DecisionIntelligence
               decisionReady={decisionReady}
               progress={incidentState.progress}
-              metrics={
-                decisionMetrics.length > 0
-                  ? decisionMetrics
-                  : incidentState.decisionMetrics
-              }
+              inspectedScenario={inspectedScenario}
+              recommendedScenario={recommendedScenario}
               evidence={decisionEvidence}
-              recommendedAction={
-                intelligenceLoading
-                  ? "Loading decision intelligence from Snowflake..."
-                  : recommendedAction
-              }
-              selectedScenarioName={
-                recommendedScenario?.name ?? "Recommended Scenario"
-              }
-              selectedScenarioStrategy={
-                recommendedScenario?.strategy ?? "No completed simulation available"
-              }
+              recommendedAction={recommendedAction}
             />
 
             <AskEcho
