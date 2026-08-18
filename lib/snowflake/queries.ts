@@ -116,3 +116,29 @@ export const cortexQueries = {
     ) AS response
   `,
 } as const;
+
+export const decisionExecutionQueries = {
+  insertAudit: `
+    INSERT INTO ECHO_DB.AI.DECISION_AUDIT (
+      AUDIT_ID,
+      INCIDENT_ID,
+      DECISION_ID,
+      SCENARIO_ID,
+      ACTION,
+      EXECUTED_BY,
+      EXECUTED_AT,
+      PAYLOAD,
+      STATUS
+    )
+    SELECT
+      ?,
+      ?,
+      ?,
+      ?,
+      ?,
+      ?,
+      CURRENT_TIMESTAMP(),
+      PARSE_JSON(?),
+      ?
+  `,
+};

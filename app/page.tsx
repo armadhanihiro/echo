@@ -14,7 +14,9 @@ import { useIncidents } from "@/hooks/useIncidents";
 import { useIncidentIntelligence } from "@/hooks/useIncidentIntelligence";
 
 import type { DecisionScenario, DecisionMetric } from "@/types/incident";
+import type { SimulationParameters } from "@/types/simulation";
 
+import { resimulateScenarios } from "@/lib/simulation/engine";
 import type { SimulationScenarioDto } from "@/lib/api/intelligence";
 
 import { useState } from "react";
@@ -119,6 +121,13 @@ function mapSimulationScenarios(scenarios: SimulationScenarioDto[], selectedScen
   });
 }
 
+const DEFAULT_SIMULATION_PARAMETERS: SimulationParameters = {
+  windSpeed: 65,
+  availableFireTrucks: 12,
+  medicalCapacity: "NORMAL",
+  roadAccess: "OPEN",
+};
+
 export default function HomePage() {
   const {
     incidents,
@@ -145,8 +154,10 @@ export default function HomePage() {
   );
 
   const activeIntelligence = intelligenceLoading ? null : intelligence;
+
   const commanderConfidence = activeIntelligence?.recommendation?.confidence ?? incidentState.confidence;
   const commanderRecommendation = activeIntelligence?.recommendation?.content ?? incidentState.recommendation;
+
   const simulation = activeIntelligence?.simulation ?? null;
   const hasSimulation = Boolean(simulation) && Boolean(simulation?.scenarios.length);
   const simulationScenarios =
@@ -158,13 +169,20 @@ export default function HomePage() {
         )
       : [];
   
-  const recommendedScenario = simulationScenarios.find((scenario) => scenario.recommended) ?? simulationScenarios[0] ?? null;
+  const [simulationParameters, setSimulationParameters] = useState<SimulationParameters>(DEFAULT_SIMULATION_PARAMETERS);
+  const [resimulatedScenarios, setResimulatedScenarios] = useState<DecisionScenario[] | null>(null);
+  const [isResimulating, setIsResimulating] = useState(false);
+
+  const displayedScenarios = resimulatedScenarios ?? simulationScenarios;
+  const recommendedScenario = displayedScenarios.find((scenario) => scenario.recommended) ?? displayedScenarios[0] ?? null;
+  
   const [ inspectedScenarioId, setInspectedScenarioId ] = useState<string | null>(null);
-  const effectiveInspectedScenarioId = inspectedScenarioId && simulationScenarios.some(
+  const effectiveInspectedScenarioId = inspectedScenarioId && displayedScenarios.some(
     (scenario) => scenario.id === inspectedScenarioId) 
       ? inspectedScenarioId 
       : recommendedScenario?.id ?? null;
-  const inspectedScenario = simulationScenarios.find((scenario) => scenario.id === effectiveInspectedScenarioId) ?? recommendedScenario;
+  const inspectedScenario = displayedScenarios.find((scenario) => scenario.id === effectiveInspectedScenarioId) ?? recommendedScenario;
+  
   const simulationReady = incidentState.simulationReady && hasSimulation;
   const decisionReady = incidentState.decisionReady && Boolean(activeIntelligence?.decision);
   const recommendedAction = activeIntelligence?.decision?.action ?? incidentState.recommendedAction;
@@ -197,6 +215,10 @@ export default function HomePage() {
 
     if (!incident) return;
 
+    setResimulatedScenarios(null);
+    setSimulationParameters(DEFAULT_SIMULATION_PARAMETERS);
+    setInspectedScenarioId(null);
+
     resetIncident();
     selectIncident(incident);
   }
@@ -208,6 +230,60 @@ export default function HomePage() {
     if (!selectedIncident || dashboardLoading) return;
 
     startIncident();
+  }
+
+  function handleResimulate() {
+    if (!simulationReady || simulationScenarios.length === 0) {
+      return;
+    }
+
+    setIsResimulating(true);
+
+    const result = resimulateScenarios(simulationScenarios, simulationParameters);
+    const updatedScenarios = simulationScenarios.map((scenario) => {
+      const resimulated = result.scenarios.find((item) => item.id === scenario.id);
+
+      if (!resimulated) {
+        return scenario;
+      }
+
+      return {
+        ...scenario,
+        confidence: resimulated.confidence,
+        risk: resimulated.risk,
+        eta: resimulated.etaHours !== null ? `${resimulated.etaHours} hrs` : "N/A",
+        resources: resimulated.resourceLevel,
+        recommended: scenario.id === result.recommendedScenarioId,
+        metrics: [
+          {
+            label: "Safety",
+            value: resimulated.metrics.safety,
+            color: "bg-emerald-400",
+          },
+          {
+            label: "Response Time",
+            value: resimulated.metrics.responseTime,
+            color: "bg-cyan-400",
+          },
+          {
+            label: "Resource Fit",
+            value: resimulated.metrics.resourceFit,
+            color: "bg-blue-400",
+          },
+          {
+            label: "Operational Risk",
+            value: resimulated.metrics.operationalRisk,
+            color: "bg-amber-400",
+          },
+        ],
+      };
+    });
+
+    setResimulatedScenarios(updatedScenarios);
+
+    window.setTimeout(() => {
+      setIsResimulating(false);
+    }, 500);
   }
 
   return (
@@ -303,12 +379,16 @@ export default function HomePage() {
 
             <DecisionSimulation
               progress={incidentState.progress}
-              scenarios={simulationScenarios}
+              scenarios={displayedScenarios}
               simulationReady={simulationReady}
               isLoading={intelligenceLoading}
               hasSimulation={hasSimulation}
               inspectedScenarioId={effectiveInspectedScenarioId}
               onInspectScenario={setInspectedScenarioId}
+              parameters={simulationParameters}
+              onParametersChange={setSimulationParameters}
+              onResimulate={handleResimulate}
+              isResimulating={isResimulating}
             />
 
             <DecisionIntelligence
@@ -318,6 +398,8 @@ export default function HomePage() {
               recommendedScenario={recommendedScenario}
               evidence={decisionEvidence}
               recommendedAction={recommendedAction}
+              incidentId={selectedIncident?.id ?? null}
+              decisionId={activeIntelligence?.decision?.id ?? null}
             />
 
             <AskEcho

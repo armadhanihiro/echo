@@ -9,6 +9,8 @@ import {
   Truck,
 } from "lucide-react";
 
+import { useState } from "react";
+
 type DecisionIntelligenceProps = {
   decisionReady: boolean;
   progress: number;
@@ -16,6 +18,8 @@ type DecisionIntelligenceProps = {
   recommendedScenario: DecisionScenario | null;
   evidence: DecisionEvidence[];
   recommendedAction: string;
+  incidentId: string | null;
+  decisionId: string | null;
 };
 
 const iconByTone = {
@@ -32,8 +36,60 @@ const colorByTone = {
   amber: "text-amber-300",
 } as const;
 
-export function DecisionIntelligence({ decisionReady, progress, inspectedScenario, recommendedScenario, evidence, recommendedAction }: DecisionIntelligenceProps) {
+export function DecisionIntelligence({ decisionReady, progress, inspectedScenario, recommendedScenario, evidence, recommendedAction, incidentId, decisionId }: DecisionIntelligenceProps) {
   const isAnalysing = progress > 0 && !decisionReady;
+
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [executionError, setExecutionError] = useState<string | null>(null);
+  const [executionResult, setExecutionResult] = useState<{ auditId: string; status: string; executedBy: string; } | null>(null);
+
+  async function handleExecuteRecommendation() {
+    if (!incidentId || !decisionId || !recommendedScenario || !recommendedAction || isExecuting || executionResult) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Execute ${recommendedScenario.name}: ${recommendedScenario.strategy}?\n\n${recommendedAction}`,);
+
+    if (!confirmed) return;
+
+    try {
+      setIsExecuting(true);
+      setExecutionError(null);
+
+      const response = await fetch(
+        "/api/decisions/execute",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            incidentId,
+            decisionId,
+            scenarioId: recommendedScenario.id,
+            action: recommendedAction,
+            executedBy: "Incident Commander",
+          }),
+        },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error ?? "Unable to execute recommendation.");
+      }
+
+      setExecutionResult({
+        auditId: result.data.auditId,
+        status: result.data.status,
+        executedBy: result.data.executedBy,
+      });
+    } catch (error) {
+      setExecutionError(error instanceof Error ? error.message : "Unable to execute recommendation.");
+    } finally {
+      setIsExecuting(false);
+    }
+  }
 
   return (
     <section className="rounded-2xl border border-slate-800 bg-[#131C2E] p-6">
@@ -169,6 +225,49 @@ export function DecisionIntelligence({ decisionReady, progress, inspectedScenari
                 <p className="mt-2 text-sm leading-6 text-slate-300">
                   {recommendedAction}
                 </p>
+
+                {executionError && (
+                  <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                    {executionError}
+                  </div>
+                )}
+
+                {executionResult ? (
+                  <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3">
+                    <p className="text-sm font-semibold text-emerald-300">
+                      Recommendation Executed
+                    </p>
+
+                    <p className="mt-1 text-xs text-emerald-200/70">
+                      Authorized by {executionResult.executedBy}
+                    </p>
+
+                    <p className="mt-1 break-all text-[10px] text-slate-400">
+                      Audit ID: {executionResult.auditId}
+                    </p>
+
+                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-300">
+                      Logged to Snowflake
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={
+                      !decisionReady ||
+                      !incidentId ||
+                      !decisionId ||
+                      !recommendedScenario ||
+                      isExecuting
+                    }
+                    onClick={handleExecuteRecommendation}
+                    className="mt-4 w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                  >
+                    {isExecuting
+                      ? "Executing Recommendation..."
+                      : `Execute ${recommendedScenario?.name ?? "Recommendation"}`}
+                  </button>
+                )}
               </div>
             </>
           )}
