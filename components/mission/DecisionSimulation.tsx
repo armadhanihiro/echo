@@ -23,13 +23,6 @@ export function DecisionSimulation({ progress, scenarios, simulationReady, isLoa
   const hasStarted = progress > 0;
   const isSimulating = progress > 0 && progress < 100;
 
-  function updateParameter<K extends keyof SimulationParameters>(key: K, value: SimulationParameters[K]) {
-    onParametersChange({
-      ...parameters,
-      [key]: value,
-    });
-  }
-
   return (
     <section className="rounded-2xl border border-slate-800 bg-[#131C2E] p-6">
       <div className="flex items-start justify-between">
@@ -89,147 +82,648 @@ export function DecisionSimulation({ progress, scenarios, simulationReady, isLoa
         </div>
 
         <div className="mt-5 grid gap-5 lg:grid-cols-4">
-          {/* Wind */}
-          <div>
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-300">
-                Wind Speed
-              </label>
+          {/* Fire */}
+          {parameters.incidentType === "FIRE" && (
+            <>
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Wind Speed
+                  </label>
 
-              <span className="text-xs font-semibold text-cyan-300">
-                {parameters.windSpeed} km/h
-              </span>
-            </div>
+                  <span className="text-xs font-semibold text-cyan-300">
+                    {parameters.windSpeed} km/h
+                  </span>
+                </div>
 
-            <input
-              type="range"
-              min={0}
-              max={120}
-              step={5}
-              value={parameters.windSpeed}
-              disabled={!simulationReady || isResimulating}
-              onChange={(event) =>
-                updateParameter(
-                  "windSpeed",
-                  Number(event.target.value),
-                )
-              }
-              className="mt-4 w-full accent-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
-            />
+                <input
+                  type="range"
+                  min={0}
+                  max={120}
+                  step={5}
+                  value={parameters.windSpeed}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      windSpeed: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 w-full accent-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
 
-            <div className="mt-1 flex justify-between text-[10px] text-slate-600">
-              <span>0</span>
-              <span>120 km/h</span>
-            </div>
-          </div>
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Available Fire Trucks
+                  </label>
 
-          {/* Fire trucks */}
-          <div>
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-300">
-                Available Fire Trucks
-              </label>
+                  <span className="text-xs font-semibold text-blue-300">
+                    {parameters.availableFireTrucks}
+                  </span>
+                </div>
 
-              <span className="text-xs font-semibold text-blue-300">
-                {parameters.availableFireTrucks}
-              </span>
-            </div>
+                <input
+                  type="number"
+                  min={0}
+                  max={30}
+                  value={parameters.availableFireTrucks}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      availableFireTrucks: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-white outline-none"
+                />
+              </div>
 
-            <div className="mt-4 flex h-10 items-center rounded-xl border border-slate-700 bg-[#131C2E]">
-              <button
-                type="button"
-                disabled={
-                  !simulationReady ||
-                  isResimulating ||
-                  parameters.availableFireTrucks <= 0
-                }
-                onClick={() =>
-                  updateParameter(
-                    "availableFireTrucks",
-                    Math.max(
-                      0,
-                      parameters.availableFireTrucks - 1,
-                    ),
-                  )
-                }
-                className="h-full w-10 text-lg text-slate-300 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                -
-              </button>
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Water Bombers
+                  </label>
 
-              <span className="flex-1 text-center text-sm font-semibold text-white">
-                {parameters.availableFireTrucks}
-              </span>
+                  <span className="text-xs font-semibold text-blue-300">
+                    {parameters.waterBombers}
+                  </span>
+                </div>
 
-              <button
-                type="button"
-                disabled={
-                  !simulationReady ||
-                  isResimulating ||
-                  parameters.availableFireTrucks >= 30
-                }
-                onClick={() =>
-                  updateParameter(
-                    "availableFireTrucks",
-                    Math.min(
-                      30,
-                      parameters.availableFireTrucks + 1,
-                    ),
-                  )
-                }
-                className="h-full w-10 text-lg text-slate-300 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                +
-              </button>
-            </div>
-          </div>
+                <input
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={parameters.waterBombers}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      waterBombers: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-white outline-none"
+                />
+              </div>
 
-          {/* Medical capacity */}
-          <div>
-            <label className="text-xs font-semibold text-slate-300">
-              Medical Capacity
-            </label>
+              <div>
+                <label className="text-xs font-semibold text-slate-300">
+                  Road Access
+                </label>
 
-            <select
-              value={parameters.medicalCapacity}
-              disabled={!simulationReady || isResimulating}
-              onChange={(event) =>
-                updateParameter(
-                  "medicalCapacity",
-                  event.target
-                    .value as SimulationParameters["medicalCapacity"],
-                )
-              }
-              className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-slate-200 outline-none focus:border-cyan-500/50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="LOW">Low</option>
-              <option value="NORMAL">Normal</option>
-              <option value="HIGH">High</option>
-            </select>
-          </div>
+                <select
+                  value={parameters.roadAccess}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      roadAccess: event.target.value as
+                        | "OPEN"
+                        | "RESTRICTED"
+                        | "CLOSED",
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-slate-200 outline-none"
+                >
+                  <option value="OPEN">Open</option>
+                  <option value="RESTRICTED">Restricted</option>
+                  <option value="CLOSED">Closed</option>
+                </select>
+              </div>
+            </>
+          )}
 
-          {/* Road access */}
-          <div>
-            <label className="text-xs font-semibold text-slate-300">
-              Road Access
-            </label>
+          {/* Flood */}
+          {parameters.incidentType === "FLOOD" && (
+            <>
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Rainfall Intensity
+                  </label>
 
-            <select
-              value={parameters.roadAccess}
-              disabled={!simulationReady || isResimulating}
-              onChange={(event) =>
-                updateParameter(
-                  "roadAccess",
-                  event.target.value as SimulationParameters["roadAccess"],
-                )
-              }
-              className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-slate-200 outline-none focus:border-cyan-500/50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="OPEN">Open</option>
-              <option value="RESTRICTED">Restricted</option>
-              <option value="CLOSED">Closed</option>
-            </select>
-          </div>
+                  <span className="text-xs font-semibold text-cyan-300">
+                    {parameters.rainfallIntensity} mm/h
+                  </span>
+                </div>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={120}
+                  step={5}
+                  value={parameters.rainfallIntensity}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      rainfallIntensity: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 w-full accent-cyan-400 disabled:opacity-50"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">
+                    River Level
+                  </label>
+
+                  <span className="text-xs font-semibold text-blue-300">
+                    {parameters.riverLevel} m
+                  </span>
+                </div>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={12}
+                  step={0.1}
+                  value={parameters.riverLevel}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      riverLevel: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 w-full accent-blue-400 disabled:opacity-50"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300">
+                  Available SES Units
+                </label>
+
+                <input
+                  type="number"
+                  min={0}
+                  max={30}
+                  value={parameters.availableSesUnits}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      availableSesUnits: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-white outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300">
+                  Road Access
+                </label>
+
+                <select
+                  value={parameters.roadAccess}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      roadAccess: event.target.value as
+                        | "OPEN"
+                        | "RESTRICTED"
+                        | "CLOSED",
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-slate-200 outline-none"
+                >
+                  <option value="OPEN">Open</option>
+                  <option value="RESTRICTED">Restricted</option>
+                  <option value="CLOSED">Closed</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          {/* Hazmat */}
+          {parameters.incidentType === "HAZMAT" && (
+            <>
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Wind Speed
+                  </label>
+
+                  <span className="text-xs font-semibold text-cyan-300">
+                    {parameters.windSpeed} km/h
+                  </span>
+                </div>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={parameters.windSpeed}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      windSpeed: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 w-full accent-cyan-400 disabled:opacity-50"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300">
+                  Hazmat Teams
+                </label>
+
+                <input
+                  type="number"
+                  min={0}
+                  max={20}
+                  value={parameters.hazmatTeams}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      hazmatTeams: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-white outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300">
+                  Decontamination Units
+                </label>
+
+                <input
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={parameters.decontaminationUnits}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      decontaminationUnits: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-white outline-none"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Exclusion Radius
+                  </label>
+
+                  <span className="text-xs font-semibold text-amber-300">
+                    {parameters.exclusionRadius} m
+                  </span>
+                </div>
+
+                <input
+                  type="range"
+                  min={100}
+                  max={2000}
+                  step={100}
+                  value={parameters.exclusionRadius}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      exclusionRadius: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 w-full accent-amber-400 disabled:opacity-50"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Collision */}
+          {parameters.incidentType === "COLLISION" && (
+            <>
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Casualty Count
+                  </label>
+
+                  <span className="text-xs font-semibold text-red-300">
+                    {parameters.casualtyCount}
+                  </span>
+                </div>
+
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={parameters.casualtyCount}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      casualtyCount: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-white outline-none"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Available Ambulances
+                  </label>
+
+                  <span className="text-xs font-semibold text-cyan-300">
+                    {parameters.availableAmbulances}
+                  </span>
+                </div>
+
+                <input
+                  type="number"
+                  min={0}
+                  max={30}
+                  value={parameters.availableAmbulances}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      availableAmbulances: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-white outline-none"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Rescue Units
+                  </label>
+
+                  <span className="text-xs font-semibold text-blue-300">
+                    {parameters.rescueUnits}
+                  </span>
+                </div>
+
+                <input
+                  type="number"
+                  min={0}
+                  max={20}
+                  value={parameters.rescueUnits}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      rescueUnits: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-white outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300">
+                  Road Access
+                </label>
+
+                <select
+                  value={parameters.roadAccess}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      roadAccess: event.target.value as
+                        | "OPEN"
+                        | "RESTRICTED"
+                        | "CLOSED",
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-slate-200 outline-none"
+                >
+                  <option value="OPEN">Open</option>
+                  <option value="RESTRICTED">Restricted</option>
+                  <option value="CLOSED">Closed</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          {/* Storm */}
+          {parameters.incidentType === "STORM" && (
+            <>
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Wind Speed
+                  </label>
+
+                  <span className="text-xs font-semibold text-cyan-300">
+                    {parameters.windSpeed} km/h
+                  </span>
+                </div>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={160}
+                  step={5}
+                  value={parameters.windSpeed}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      windSpeed: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 w-full accent-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Affected Properties
+                  </label>
+
+                  <span className="text-xs font-semibold text-amber-300">
+                    {parameters.affectedProperties}
+                  </span>
+                </div>
+
+                <input
+                  type="number"
+                  min={0}
+                  max={500}
+                  value={parameters.affectedProperties}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      affectedProperties: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-white outline-none"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Available Response Units
+                  </label>
+
+                  <span className="text-xs font-semibold text-blue-300">
+                    {parameters.availableResponseUnits}
+                  </span>
+                </div>
+
+                <input
+                  type="number"
+                  min={0}
+                  max={40}
+                  value={parameters.availableResponseUnits}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      availableResponseUnits: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-white outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300">
+                  Road Access
+                </label>
+
+                <select
+                  value={parameters.roadAccess}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      roadAccess: event.target.value as
+                        | "OPEN"
+                        | "RESTRICTED"
+                        | "CLOSED",
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-slate-200 outline-none"
+                >
+                  <option value="OPEN">Open</option>
+                  <option value="RESTRICTED">Restricted</option>
+                  <option value="CLOSED">Closed</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          {/* Other */}
+          {parameters.incidentType === "OTHER" && (
+            <>
+              <div>
+                <label className="text-xs font-semibold text-slate-300">
+                  Operational Severity
+                </label>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={parameters.operationalSeverity}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      operationalSeverity: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 w-full accent-violet-400 disabled:opacity-50"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300">
+                  Available Response Units
+                </label>
+
+                <input
+                  type="number"
+                  min={0}
+                  max={30}
+                  value={parameters.availableResponseUnits}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      availableResponseUnits: Number(event.target.value),
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-white outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300">
+                  Support Capacity
+                </label>
+
+                <select
+                  value={parameters.supportCapacity}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      supportCapacity: event.target.value as
+                        | "LOW"
+                        | "NORMAL"
+                        | "HIGH",
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-slate-200 outline-none"
+                >
+                  <option value="LOW">Low</option>
+                  <option value="NORMAL">Normal</option>
+                  <option value="HIGH">High</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300">
+                  Road Access
+                </label>
+
+                <select
+                  value={parameters.roadAccess}
+                  disabled={!simulationReady || isResimulating}
+                  onChange={(event) =>
+                    onParametersChange({
+                      ...parameters,
+                      roadAccess: event.target.value as
+                        | "OPEN"
+                        | "RESTRICTED"
+                        | "CLOSED",
+                    })
+                  }
+                  className="mt-4 h-10 w-full rounded-xl border border-slate-700 bg-[#131C2E] px-3 text-sm text-slate-200 outline-none"
+                >
+                  <option value="OPEN">Open</option>
+                  <option value="RESTRICTED">Restricted</option>
+                  <option value="CLOSED">Closed</option>
+                </select>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="mt-5 flex justify-end">

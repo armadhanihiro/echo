@@ -8,16 +8,22 @@ import { DecisionSimulation } from "@/components/mission/DecisionSimulation";
 import { MapPanel } from "@/components/mission/MapPanel";
 import { Timeline } from "@/components/mission/Timeline";
 import { AskEcho } from "@/components/mission/AskEcho";
+import { FloatingAskEcho } from "@/components/mission/FloatingAskEcho";
 
 import { useIncidentEngine } from "@/hooks/useIncidentEngine";
 import { useIncidents } from "@/hooks/useIncidents";
 import { useIncidentIntelligence } from "@/hooks/useIncidentIntelligence";
 
 import type { DecisionScenario, DecisionMetric } from "@/types/incident";
-import type { SimulationParameters } from "@/types/simulation";
+import {
+  getDefaultSimulationParameters,
+  type SimulationParameters,
+} from "@/types/simulation";
 
 import { resimulateScenarios } from "@/lib/simulation/engine";
 import type { SimulationScenarioDto } from "@/lib/api/intelligence";
+
+
 
 import { useState } from "react";
 
@@ -121,13 +127,6 @@ function mapSimulationScenarios(scenarios: SimulationScenarioDto[], selectedScen
   });
 }
 
-const DEFAULT_SIMULATION_PARAMETERS: SimulationParameters = {
-  windSpeed: 65,
-  availableFireTrucks: 12,
-  medicalCapacity: "NORMAL",
-  roadAccess: "OPEN",
-};
-
 export default function HomePage() {
   const {
     incidents,
@@ -169,7 +168,7 @@ export default function HomePage() {
         )
       : [];
   
-  const [simulationParameters, setSimulationParameters] = useState<SimulationParameters>(DEFAULT_SIMULATION_PARAMETERS);
+  const [simulationParameters, setSimulationParameters] = useState<SimulationParameters>(() => getDefaultSimulationParameters(undefined));
   const [resimulatedScenarios, setResimulatedScenarios] = useState<DecisionScenario[] | null>(null);
   const [isResimulating, setIsResimulating] = useState(false);
 
@@ -209,14 +208,17 @@ export default function HomePage() {
     : incidentState.decisionEvidence;
 
   function handleSelectIncident(incidentId: string) {
-    const incident = incidents.find(
-      (item) => item.id === incidentId,
-    );
+    const incident = incidents.find((item) => item.id === incidentId);
 
     if (!incident) return;
 
+    console.log("SELECTED INCIDENT:", {
+      name: incident.title,
+      type: incident.type,
+    });
+
     setResimulatedScenarios(null);
-    setSimulationParameters(DEFAULT_SIMULATION_PARAMETERS);
+    setSimulationParameters(getDefaultSimulationParameters(incident.type));
     setInspectedScenarioId(null);
 
     resetIncident();
@@ -287,7 +289,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0B1220] text-slate-100">
+    <main id="overview" className="min-h-screen bg-[#0B1220] text-slate-100">
       <div className="grid min-h-screen grid-cols-[72px_1fr]">
         <Sidebar />
 
@@ -299,7 +301,7 @@ export default function HomePage() {
             disabled={dashboardLoading || !selectedIncident}
           />
 
-          <section className="flex flex-col gap-6 p-6">
+          <section id="mission" className="flex flex-col gap-6 p-6">
             {incidentsError && (
               <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                 {incidentsError}
@@ -320,30 +322,34 @@ export default function HomePage() {
                     : "opacity-100"
                 }`}
               >
-                <Timeline
-                  events={incidentState.timeline}
-                  incidentTitle={selectedIncident?.title ?? "No active incident"}
-                  incidentType={selectedIncident?.type ?? "OTHER"}
-                  isLoading={incidentsLoading}
-                  isSwitching={intelligenceLoading}
-                  incidents={incidents}
-                  selectedIncidentId={selectedIncident?.id ?? null}
-                  onSelectIncident={handleSelectIncident}
-                />
+                <div id="incidents" className="scroll-mt-6 rounded-2xl">
+                  <Timeline
+                    events={incidentState.timeline}
+                    incidentTitle={selectedIncident?.title ?? "No active incident"}
+                    incidentType={selectedIncident?.type ?? "OTHER"}
+                    isLoading={incidentsLoading}
+                    isSwitching={intelligenceLoading}
+                    incidents={incidents}
+                    selectedIncidentId={selectedIncident?.id ?? null}
+                    onSelectIncident={handleSelectIncident}
+                  />
+                </div>
 
-                <MapPanel
-                  incidentRadius={incidentState.incidentRadius}
-                  routeVisible={incidentState.routeVisible}
-                  decisionReady={incidentState.decisionReady}
-                  incidentTitle={selectedIncident?.title ?? "Loading incident"}
-                  incidentType={selectedIncident?.type ?? "UNKNOWN"}
-                  severity={selectedIncident?.severity ?? "UNKNOWN"}
-                  latitude={selectedIncident?.latitude ?? null}
-                  longitude={selectedIncident?.longitude ?? null}
-                  locationName={selectedIncident?.locationName ?? null}
-                  metadata={selectedIncident?.metadata ?? null}
-                  resources={deployedResources}
-                />
+                <div id="live-map" className="scroll-mt-6">
+                  <MapPanel
+                    incidentRadius={incidentState.incidentRadius}
+                    routeVisible={incidentState.routeVisible}
+                    decisionReady={incidentState.decisionReady}
+                    incidentTitle={selectedIncident?.title ?? "Loading incident"}
+                    incidentType={selectedIncident?.type ?? "UNKNOWN"}
+                    severity={selectedIncident?.severity ?? "UNKNOWN"}
+                    latitude={selectedIncident?.latitude ?? null}
+                    longitude={selectedIncident?.longitude ?? null}
+                    locationName={selectedIncident?.locationName ?? null}
+                    metadata={selectedIncident?.metadata ?? null}
+                    resources={deployedResources}
+                  />
+                </div>
 
                 <AICommander
                   agents={incidentState.agents}
@@ -377,32 +383,54 @@ export default function HomePage() {
               )}
             </div>
 
-            <DecisionSimulation
-              progress={incidentState.progress}
-              scenarios={displayedScenarios}
-              simulationReady={simulationReady}
-              isLoading={intelligenceLoading}
-              hasSimulation={hasSimulation}
-              inspectedScenarioId={effectiveInspectedScenarioId}
-              onInspectScenario={setInspectedScenarioId}
-              parameters={simulationParameters}
-              onParametersChange={setSimulationParameters}
-              onResimulate={handleResimulate}
-              isResimulating={isResimulating}
-            />
+            <div id="decision" className="scroll-mt-6 space-y-6 rounded-2xl">
+              <DecisionSimulation
+                progress={incidentState.progress}
+                scenarios={displayedScenarios}
+                simulationReady={simulationReady}
+                isLoading={intelligenceLoading}
+                hasSimulation={hasSimulation}
+                inspectedScenarioId={effectiveInspectedScenarioId}
+                onInspectScenario={setInspectedScenarioId}
+                parameters={simulationParameters}
+                onParametersChange={setSimulationParameters}
+                onResimulate={handleResimulate}
+                isResimulating={isResimulating}
+              />
 
-            <DecisionIntelligence
-              decisionReady={decisionReady}
-              progress={incidentState.progress}
-              inspectedScenario={inspectedScenario}
-              recommendedScenario={recommendedScenario}
-              evidence={decisionEvidence}
-              recommendedAction={recommendedAction}
-              incidentId={selectedIncident?.id ?? null}
-              decisionId={activeIntelligence?.decision?.id ?? null}
-            />
+              <DecisionIntelligence
+                decisionReady={decisionReady}
+                progress={incidentState.progress}
+                inspectedScenario={inspectedScenario}
+                recommendedScenario={recommendedScenario}
+                evidence={decisionEvidence}
+                recommendedAction={recommendedAction}
+                incidentId={selectedIncident?.id ?? null}
+                decisionId={activeIntelligence?.decision?.id ?? null}
+              />
+            </div>
 
-            <AskEcho
+            <div id="ask-echo" className="scroll-mt-6 rounded-2xl">
+              <AskEcho
+                incident={
+                  selectedIncident
+                    ? {
+                        id: selectedIncident.id,
+                        title: selectedIncident.title,
+                        type: selectedIncident.type,
+                        severity: selectedIncident.severity,
+                        status: selectedIncident.status,
+                        location: selectedIncident.locationName,
+                        description: selectedIncident.description,
+                        resourceCount: deployedResources.length,
+                        recommendation: commanderRecommendation,
+                      }
+                    : null
+                }
+              />
+            </div>
+
+            <FloatingAskEcho
               incident={
                 selectedIncident
                   ? {

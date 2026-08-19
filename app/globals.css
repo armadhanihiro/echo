@@ -117,6 +117,26 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+.echo-navigation-highlight {
+  animation: echo-navigation-pulse 1.2s ease-out;
+}
+
+@keyframes echo-navigation-pulse {
+  0% {
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0);
+  }
+
+  30% {
+    box-shadow:
+      0 0 0 1px rgba(34, 211, 238, 0.55),
+      0 0 28px rgba(34, 211, 238, 0.12);
+  }
+
+  100% {
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
