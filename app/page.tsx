@@ -127,6 +127,21 @@ function mapSimulationScenarios(scenarios: SimulationScenarioDto[], selectedScen
   });
 }
 
+function getIncidentTimeZoneLabel(locationName: string | null | undefined): string {
+  if (!locationName) return "Local";
+
+  if (
+    locationName.includes("New Zealand") ||
+    locationName.includes("Auckland") ||
+    locationName.includes("Canterbury") ||
+    locationName.includes("Christchurch")
+  ) {
+    return "NZST";
+  }
+
+  return "ACST";
+}
+
 export default function HomePage() {
   const {
     incidents,
@@ -327,6 +342,7 @@ export default function HomePage() {
                     events={incidentState.timeline}
                     incidentTitle={selectedIncident?.title ?? "No active incident"}
                     incidentType={selectedIncident?.type ?? "OTHER"}
+                    timeZoneLabel={getIncidentTimeZoneLabel(selectedIncident?.locationName)}
                     isLoading={incidentsLoading}
                     isSwitching={intelligenceLoading}
                     incidents={incidents}

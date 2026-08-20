@@ -14,7 +14,8 @@ type SnowflakeIncidentRow = {
     | "FLOOD"
     | "EARTHQUAKE"
     | "HAZMAT"
-    | "MEDICAL"
+    | "COLLISION"
+    | "STORM"
     | "OTHER";
   LOCATION_LAT: number | null;
   LOCATION_LNG: number | null;

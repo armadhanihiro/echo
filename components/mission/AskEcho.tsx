@@ -125,9 +125,13 @@ export function AskEcho({ incident }: AskEchoProps) {
         incidentType === "HAZMAT"
             ? "How should the exclusion zone be managed?"
             : null,
-        incidentType === "MEDICAL"
+        incidentType === "COLLISION"
             ? "What is the mass casualty triage procedure?"
             : null,
+        incidentType === "STORM"
+            ? "What storm response actions should responders prioritise?"
+            : null,
+            
         "What resources should be deployed first?",
     ].filter((question): question is string =>
         Boolean(question),

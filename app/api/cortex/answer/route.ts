@@ -10,6 +10,9 @@ type IncidentContextRequest = {
   severity?: unknown;
   status?: unknown;
   location?: unknown;
+  description?: unknown;
+  resourceCount?: unknown;
+  recommendation?: unknown;
 };
 
 type AnswerRequestBody = {
@@ -19,6 +22,10 @@ type AnswerRequestBody = {
 
 function parseOptionalString(value: unknown): string | null {
     return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function parseOptionalNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 export async function POST(request: Request) {
@@ -56,8 +63,10 @@ export async function POST(request: Request) {
                 severity: parseOptionalString(body.incident.severity),
                 status: parseOptionalString(body.incident.status),
                 location: parseOptionalString(body.incident.location),
-                }
-            : null;
+                description: parseOptionalString(body.incident.description),
+                resourceCount: parseOptionalNumber(body.incident.resourceCount),
+                recommendation: parseOptionalString(body.incident.recommendation),
+            } : null;
 
         const result = await generateGroundedAnswer(question, incident);
 

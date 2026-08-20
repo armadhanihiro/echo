@@ -46,7 +46,8 @@ function createIncidentIcon(type: string) {
       FIRE: Flame,
       FLOOD: Waves,
       HAZMAT: ShieldAlert,
-      MEDICAL: Ambulance,
+      COLLISION: Ambulance,
+      STORM: Wind,
       OTHER: AlertTriangle,
     }[type] ?? AlertTriangle;
 
@@ -156,12 +157,20 @@ function getIncidentZoneAppearance(type: string) {
         routeLabel: "Exclusion Route",
       };
 
-    case "MEDICAL":
+    case "COLLISION":
       return {
         stroke: "#10b981",
         fill: "#10b981",
-        label: "Medical Response Zone",
+        label: "Collision Response Zone",
         routeLabel: "Emergency Access Route",
+      };
+
+    case "STORM":
+      return {
+        stroke: "#06b6d4",
+        fill: "#06b6d4",
+        label: "Storm Impact Zone",
+        routeLabel: "Emergency Response Corridor",
       };
 
     default:
@@ -186,8 +195,11 @@ function getDynamicMapStatus(incidentType: string, routeVisible: boolean, decisi
       case "HAZMAT":
         return "Exclusion perimeter confirmed";
 
-      case "MEDICAL":
+      case "COLLISION":
         return "Emergency access route confirmed";
+      
+      case "STORM":
+        return "Storm response corridor confirmed";
 
       default:
         return "Response corridor confirmed";
@@ -205,8 +217,11 @@ function getDynamicMapStatus(incidentType: string, routeVisible: boolean, decisi
       case "HAZMAT":
         return "Mapping exclusion perimeter";
 
-      case "MEDICAL":
+      case "COLLISION":
         return "Assessing emergency access";
+
+      case "STORM":
+        return "Assessing storm response corridors";
 
       default:
         return "Analysing response corridor";
@@ -214,6 +229,132 @@ function getDynamicMapStatus(incidentType: string, routeVisible: boolean, decisi
   }
 
   return "Waiting for incident signal";
+}
+
+function getMetadataNumber(metadata: Record<string, unknown> | null, key: string): number | null {
+  const value = metadata?.[key];
+
+  return typeof value === "number" ? value : null;
+}
+
+function getIncidentOperationalStats(incidentType: string, metadata: Record<string, unknown> | null) {
+  switch (incidentType) {
+    case "FIRE": {
+      const windSpeed = getMetadataNumber(metadata, "wind_speed_kmh");
+      const structures = getMetadataNumber(metadata, "structures_threatened");
+
+      return [
+        {
+          label: "Wind",
+          value: windSpeed !== null ? `${windSpeed} km/h` : "N/A",
+          icon: Wind,
+          color: "text-cyan-300",
+        },
+        {
+          label: "Structures",
+          value: structures !== null ? structures.toLocaleString() : "N/A",
+          icon: Users,
+          color: "text-violet-300",
+        },
+      ];
+    }
+
+    case "FLOOD": {
+      const properties = getMetadataNumber(metadata, "properties_affected");
+      const evacuated = getMetadataNumber(metadata, "residents_evacuated");
+
+      return [
+        {
+          label: "Properties",
+          value: properties !== null ? properties.toLocaleString() : "N/A",
+          icon: Waves,
+          color: "text-blue-300",
+        },
+        {
+          label: "Evacuated",
+          value: evacuated !== null ? evacuated.toLocaleString() : "N/A",
+          icon: Users,
+          color: "text-violet-300",
+        },
+      ];
+    }
+
+    case "HAZMAT": {
+      const windSpeed = getMetadataNumber(metadata, "wind_speed_kmh");
+      const exclusionRadius = getMetadataNumber(metadata, "exclusion_radius_m");
+
+      return [
+        {
+          label: "Wind",
+          value: windSpeed !== null ? `${windSpeed} km/h` : "N/A",
+          icon: Wind,
+          color: "text-cyan-300",
+        },
+        {
+          label: "Exclusion",
+          value: exclusionRadius !== null ? `${exclusionRadius} m` : "N/A",
+          icon: ShieldAlert,
+          color: "text-yellow-300",
+        },
+      ];
+    }
+
+    case "COLLISION": {
+      const criticalInjuries = getMetadataNumber(metadata, "injuries_critical");
+      const casualties = getMetadataNumber(metadata, "casualty_count");
+
+      return [
+        {
+          label: "Critical",
+          value: criticalInjuries !== null ? criticalInjuries.toLocaleString() : "N/A",
+          icon: Ambulance,
+          color: "text-emerald-300",
+        },
+        {
+          label: "Casualties",
+          value: casualties !== null ? casualties.toLocaleString() : "N/A",
+          icon: Users,
+          color: "text-violet-300",
+        },
+      ];
+    }
+
+    case "STORM": {
+      const windSpeed = getMetadataNumber(metadata, "wind_speed_kmh");
+      const properties = getMetadataNumber(metadata, "properties_affected");
+
+      return [
+        {
+          label: "Wind",
+          value: windSpeed !== null ? `${windSpeed} km/h` : "N/A",
+          icon: Wind,
+          color: "text-cyan-300",
+        },
+        {
+          label: "Properties",
+          value: properties !== null ? properties.toLocaleString() : "N/A",
+          icon: Users,
+          color: "text-violet-300",
+        },
+      ];
+    }
+
+    default:
+      return [
+        {
+          label: "Impact",
+          value: "N/A",
+          icon: AlertTriangle,
+          color: "text-slate-300",
+        },
+        {
+          label: "Resources",
+          value: "N/A",
+          icon: Users,
+          color: "text-slate-300",
+        },
+      ];
+  }
 }
 
 export function MapPanelClient({ incidentRadius, routeVisible, decisionReady, latitude, longitude, incidentTitle, incidentType, severity, locationName, metadata, resources }: MapPanelProps) {
@@ -235,22 +376,6 @@ export function MapPanelClient({ incidentRadius, routeVisible, decisionReady, la
     [center[0] - 0.04, center[1] - 0.03],
   ];
 
-  const windSpeed =
-    typeof metadata?.wind_speed_kmh === "number"
-      ? `${metadata.wind_speed_kmh} km/h`
-      : "N/A";
-
-  const populationAtRisk =
-  typeof metadata?.structures_threatened === "number"
-    ? metadata.structures_threatened.toLocaleString()
-    : typeof metadata?.properties_affected === "number"
-      ? metadata.properties_affected.toLocaleString()
-      : typeof metadata?.residents_evacuated === "number"
-        ? metadata.residents_evacuated.toLocaleString()
-        : typeof metadata?.injuries_critical === "number"
-          ? metadata.injuries_critical.toLocaleString()
-          : "N/A";
-
   function getIncidentAppearance(type: string) {
     switch (type) {
       case "FIRE":
@@ -271,10 +396,16 @@ export function MapPanelClient({ incidentRadius, routeVisible, decisionReady, la
           color: "text-yellow-300",
         };
 
-      case "MEDICAL":
+      case "COLLISION":
         return {
           icon: Ambulance,
           color: "text-emerald-300",
+        };
+      
+      case "STORM":
+        return {
+          icon: Wind,
+          color: "text-cyan-300",
         };
 
       default:
@@ -288,6 +419,7 @@ export function MapPanelClient({ incidentRadius, routeVisible, decisionReady, la
   const appearance = getIncidentAppearance(incidentType);
   const zoneAppearance = getIncidentZoneAppearance(incidentType);
   const dynamicMapStatus = getDynamicMapStatus(incidentType, routeVisible, decisionReady);
+  const operationalStats = getIncidentOperationalStats(incidentType, metadata);
 
   const stats = [
     {
@@ -302,18 +434,7 @@ export function MapPanelClient({ incidentRadius, routeVisible, decisionReady, la
       icon: appearance.icon,
       color: appearance.color,
     },
-    {
-      label: "Wind",
-      value: windSpeed,
-      icon: Wind,
-      color: "text-cyan-300",
-    },
-    {
-      label: "Impact",
-      value: populationAtRisk,
-      icon: Users,
-      color: "text-violet-300",
-    },
+    ...operationalStats,
   ];
   
   return (

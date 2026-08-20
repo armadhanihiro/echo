@@ -26,6 +26,7 @@ type TimelineProps = {
   events: TimelineEvent[];
   incidentTitle: string;
   incidentType: string;
+  timeZoneLabel?: string;
   isLoading?: boolean;
   isSwitching?: boolean;
   incidents: IncidentOption[];
@@ -55,12 +56,19 @@ function getIncidentTimelineIcon(type: string) {
   switch (type) {
     case "FIRE":
       return Flame;
+
     case "FLOOD":
       return Waves;
+
     case "HAZMAT":
       return ShieldAlert;
-    case "MEDICAL":
+
+    case "COLLISION":
       return Ambulance;
+
+    case "STORM":
+      return CloudSun;
+
     default:
       return AlertTriangle;
   }
@@ -70,18 +78,25 @@ function getIncidentTimelineColor(type: string) {
   switch (type) {
     case "FIRE":
       return "text-red-300";
+
     case "FLOOD":
       return "text-blue-300";
+
     case "HAZMAT":
       return "text-yellow-300";
-    case "MEDICAL":
+
+    case "COLLISION":
       return "text-emerald-300";
+
+    case "STORM":
+      return "text-cyan-300";
+
     default:
       return "text-slate-300";
   }
 }
 
-export function Timeline({ events, incidentTitle, incidentType, isLoading = false, isSwitching = false, incidents, selectedIncidentId, onSelectIncident }: TimelineProps) {
+export function Timeline({ events, incidentTitle, incidentType, timeZoneLabel = "ACST", isLoading = false, isSwitching = false, incidents, selectedIncidentId, onSelectIncident }: TimelineProps) {
   const IncidentIcon = getIncidentTimelineIcon(incidentType);
   const incidentIconColor = getIncidentTimelineColor(incidentType);
   
@@ -173,7 +188,7 @@ export function Timeline({ events, incidentTitle, incidentType, isLoading = fals
                 <div className="min-w-0 flex-1 rounded-xl border border-slate-800 bg-[#1A2438] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-sm font-semibold text-white">
-                      {event.title}
+                      {event.title} {timeZoneLabel}
                     </h3>
 
                     <span className="text-xs text-slate-500">

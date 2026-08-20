@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS CORE.INCIDENTS (
   status         VARCHAR      NOT NULL
     COMMENT 'ACTIVE | CONTAINED | RESOLVED | CLOSED',
   incident_type  VARCHAR      NOT NULL
-    COMMENT 'FIRE | FLOOD | EARTHQUAKE | HAZMAT | MEDICAL | OTHER',
+    COMMENT 'FIRE | FLOOD | EARTHQUAKE | HAZMAT | COLLISION | STORM | MEDICAL | OTHER',
   location_lat   FLOAT,
   location_lng   FLOAT,
   location_name  VARCHAR,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS CORE.INCIDENTS (
   CONSTRAINT chk_status
     CHECK (status IN ('ACTIVE', 'CONTAINED', 'RESOLVED', 'CLOSED')),
   CONSTRAINT chk_incident_type
-    CHECK (incident_type IN ('FIRE', 'FLOOD', 'EARTHQUAKE', 'HAZMAT', 'MEDICAL', 'OTHER'))
+    CHECK (incident_type IN ('FIRE', 'FLOOD', 'EARTHQUAKE', 'HAZMAT', 'COLLISION', 'STORN' 'OTHER'))
 )
 COMMENT = 'Emergency incidents reported and tracked by ECHO';
 

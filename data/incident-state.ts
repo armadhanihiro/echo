@@ -137,61 +137,331 @@ function getAgents(stage: IncidentStage, incidentType?: string): IncidentAgent[]
   });
 }
 
-const progressByStage: Record<IncidentStage, number> = {
-  idle: 0,
-  incident: 8,
-  weather: 22,
-  medical: 38,
-  traffic: 55,
-  simulation: 78,
-  decision: 100,
-  completed: 100,
-};
+function getProgressByStage(incidentType?: string): Record<IncidentStage, number> {
+  switch (incidentType) {
+    case "FIRE":
+      return {
+        idle: 0,
+        incident: 10,
+        weather: 28,
+        medical: 42,
+        traffic: 60,
+        simulation: 82,
+        decision: 100,
+        completed: 100,
+      };
 
-const confidenceByStage: Record<IncidentStage, number> = {
-  idle: 0,
-  incident: 61,
-  weather: 72,
-  medical: 81,
-  traffic: 88,
-  simulation: 94,
-  decision: 97.8,
-  completed: 97.8,
-};
+    case "FLOOD":
+      return {
+        idle: 0,
+        incident: 8,
+        weather: 26,
+        medical: 40,
+        traffic: 62,
+        simulation: 84,
+        decision: 100,
+        completed: 100,
+      };
 
-const incidentRadiusByStage: Record<IncidentStage, number> = {
-  idle: 1800,
-  incident: 2800,
-  weather: 3800,
-  medical: 4400,
-  traffic: 5000,
-  simulation: 5400,
-  decision: 5400,
-  completed: 5400,
-};
+    case "HAZMAT":
+      return {
+        idle: 0,
+        incident: 12,
+        weather: 30,
+        medical: 48,
+        traffic: 66,
+        simulation: 86,
+        decision: 100,
+        completed: 100,
+      };
 
-const decisionMetrics: DecisionMetric[] = [
-  {
-    label: "Safety",
-    value: 97,
-    color: "bg-emerald-400",
-  },
-  {
-    label: "Response Time",
-    value: 86,
-    color: "bg-cyan-400",
-  },
-  {
-    label: "Resource Fit",
-    value: 91,
-    color: "bg-blue-400",
-  },
-  {
-    label: "Operational Risk",
-    value: 28,
-    color: "bg-amber-400",
-  },
-];
+    case "COLLISION":
+      return {
+        idle: 0,
+        incident: 14,
+        weather: 25,
+        medical: 52,
+        traffic: 70,
+        simulation: 88,
+        decision: 100,
+        completed: 100,
+      };
+
+    case "STORM":
+      return {
+        idle: 0,
+        incident: 9,
+        weather: 32,
+        medical: 46,
+        traffic: 64,
+        simulation: 83,
+        decision: 100,
+        completed: 100,
+      };
+
+    default:
+      return {
+        idle: 0,
+        incident: 8,
+        weather: 22,
+        medical: 38,
+        traffic: 55,
+        simulation: 78,
+        decision: 100,
+        completed: 100,
+      };
+  }
+}
+
+function getConfidenceByStage(incidentType?: string): Record<IncidentStage, number> {
+  switch (incidentType) {
+    case "FIRE":
+      return {
+        idle: 0,
+        incident: 58,
+        weather: 72,
+        medical: 80,
+        traffic: 87,
+        simulation: 92,
+        decision: 96,
+        completed: 96,
+      };
+
+    case "FLOOD":
+      return {
+        idle: 0,
+        incident: 55,
+        weather: 70,
+        medical: 78,
+        traffic: 86,
+        simulation: 91,
+        decision: 94,
+        completed: 94,
+      };
+
+    case "HAZMAT":
+      return {
+        idle: 0,
+        incident: 62,
+        weather: 74,
+        medical: 83,
+        traffic: 89,
+        simulation: 94,
+        decision: 95,
+        completed: 95,
+      };
+
+    case "COLLISION":
+      return {
+        idle: 0,
+        incident: 64,
+        weather: 71,
+        medical: 85,
+        traffic: 90,
+        simulation: 95,
+        decision: 98,
+        completed: 98,
+      };
+
+    case "STORM":
+      return {
+        idle: 0,
+        incident: 57,
+        weather: 73,
+        medical: 79,
+        traffic: 85,
+        simulation: 90,
+        decision: 93,
+        completed: 93,
+      };
+
+    default:
+      return {
+        idle: 0,
+        incident: 60,
+        weather: 70,
+        medical: 80,
+        traffic: 86,
+        simulation: 92,
+        decision: 95,
+        completed: 95,
+      };
+  }
+}
+
+function getIncidentRadiusByStage(incidentType?: string): Record<IncidentStage, number> {
+  const finalRadius =
+    incidentType === "FIRE"
+      ? 6000
+      : incidentType === "FLOOD"
+        ? 7000
+        : incidentType === "HAZMAT"
+          ? 2500
+          : incidentType === "COLLISION"
+            ? 1800
+            : incidentType === "STORM"
+              ? 5000
+              : 4000;
+
+  return {
+    idle: 1800,
+    incident: Math.round(finalRadius * 0.45),
+    weather: Math.round(finalRadius * 0.6),
+    medical: Math.round(finalRadius * 0.72),
+    traffic: Math.round(finalRadius * 0.86),
+    simulation: finalRadius,
+    decision: finalRadius,
+    completed: finalRadius,
+  };
+}
+
+function getDecisionMetrics(incidentType?: string): DecisionMetric[] {
+  switch (incidentType) {
+    case "FIRE":
+      return [
+        {
+          label: "Safety",
+          value: 96,
+          color: "bg-emerald-400",
+        },
+        {
+          label: "Response Time",
+          value: 88,
+          color: "bg-cyan-400",
+        },
+        {
+          label: "Resource Fit",
+          value: 90,
+          color: "bg-blue-400",
+        },
+        {
+          label: "Operational Risk",
+          value: 32,
+          color: "bg-amber-400",
+        },
+      ];
+
+    case "FLOOD":
+      return [
+        {
+          label: "Safety",
+          value: 93,
+          color: "bg-emerald-400",
+        },
+        {
+          label: "Response Time",
+          value: 82,
+          color: "bg-cyan-400",
+        },
+        {
+          label: "Resource Fit",
+          value: 87,
+          color: "bg-blue-400",
+        },
+        {
+          label: "Operational Risk",
+          value: 38,
+          color: "bg-amber-400",
+        },
+      ];
+
+    case "HAZMAT":
+      return [
+        {
+          label: "Safety",
+          value: 98,
+          color: "bg-emerald-400",
+        },
+        {
+          label: "Response Time",
+          value: 79,
+          color: "bg-cyan-400",
+        },
+        {
+          label: "Resource Fit",
+          value: 84,
+          color: "bg-blue-400",
+        },
+        {
+          label: "Operational Risk",
+          value: 42,
+          color: "bg-amber-400",
+        },
+      ];
+
+    case "COLLISION":
+      return [
+        {
+          label: "Safety",
+          value: 91,
+          color: "bg-emerald-400",
+        },
+        {
+          label: "Response Time",
+          value: 97,
+          color: "bg-cyan-400",
+        },
+        {
+          label: "Resource Fit",
+          value: 89,
+          color: "bg-blue-400",
+        },
+        {
+          label: "Operational Risk",
+          value: 35,
+          color: "bg-amber-400",
+        },
+      ];
+
+    case "STORM":
+      return [
+        {
+          label: "Safety",
+          value: 89,
+          color: "bg-emerald-400",
+        },
+        {
+          label: "Response Time",
+          value: 81,
+          color: "bg-cyan-400",
+        },
+        {
+          label: "Resource Fit",
+          value: 85,
+          color: "bg-blue-400",
+        },
+        {
+          label: "Operational Risk",
+          value: 44,
+          color: "bg-amber-400",
+        },
+      ];
+
+    default:
+      return [
+        {
+          label: "Safety",
+          value: 90,
+          color: "bg-emerald-400",
+        },
+        {
+          label: "Response Time",
+          value: 84,
+          color: "bg-cyan-400",
+        },
+        {
+          label: "Resource Fit",
+          value: 86,
+          color: "bg-blue-400",
+        },
+        {
+          label: "Operational Risk",
+          value: 40,
+          color: "bg-amber-400",
+        },
+      ];
+  }
+}
 
 type AgentDetailsById = Record<"weather" | "medical" | "infrastructure" | "risk", string>;
 
@@ -221,12 +491,24 @@ function getAgentDetails(incidentType?: string): AgentDetailsById {
         risk: "Chemical plume exposure risk predicted",
       };
 
-    case "MEDICAL":
+    case "COLLISION":
       return {
         weather: "Visibility and scene conditions assessed",
         medical: "Trauma centre capacity confirmed",
         infrastructure: "Emergency access routes verified",
         risk: "Mass casualty escalation risk analysed",
+      };
+
+    case "STORM":
+      return {
+        weather:
+          "Wind, rainfall, and severe weather impacts analysed",
+        medical:
+          "Community health and welfare needs assessed",
+        infrastructure:
+          "Road, power, and structural damage evaluated",
+        risk:
+          "Secondary storm and access risks predicted",
       };
 
     default:
@@ -268,11 +550,21 @@ function getIncidentFallbackContent(incidentType?: string): IncidentFallbackCont
         recommendedAction: "Establish the exclusion perimeter, approach from upwind, and deploy hazmat and decontamination teams.",
       };
 
-    case "MEDICAL":
+    case "COLLISION":
       return {
         recommendation: "Secure emergency access and coordinate triage, ambulance, and hospital capacity.",
         simulationMessage: "Comparing triage, rescue access, and casualty transport strategies.",
         recommendedAction: "Secure the incident scene, establish triage, and coordinate casualty transport to available trauma centres.",
+      };
+    
+    case "STORM":
+      return {
+        recommendation:
+          "Prioritise critical infrastructure, blocked access routes, and affected communities.",
+        simulationMessage:
+          "Comparing infrastructure restoration, access clearance, and community support strategies.",
+        recommendedAction:
+          "Deploy storm response crews to critical access routes and infrastructure while supporting affected communities.",
       };
 
     default:
@@ -358,7 +650,7 @@ function getDecisionEvidence(incidentType?: string): DecisionEvidence[] {
         },
       ];
 
-    case "MEDICAL":
+    case "COLLISION":
       return [
         {
           id: "medical-safety",
@@ -378,6 +670,34 @@ function getDecisionEvidence(incidentType?: string): DecisionEvidence[] {
         {
           id: "medical-risk",
           label: "Delay increases the risk of casualty deterioration and scene escalation.",
+          tone: "amber",
+        },
+      ];
+    
+    case "STORM":
+      return [
+        {
+          id: "storm-safety",
+          label:
+            "Clearing hazardous access routes reduces exposure to secondary storm impacts.",
+          tone: "emerald",
+        },
+        {
+          id: "storm-conditions",
+          label:
+            "Wind, outage, and structural damage assessments support priority response.",
+          tone: "cyan",
+        },
+        {
+          id: "storm-resources",
+          label:
+            "Response crews and infrastructure support resources are available.",
+          tone: "blue",
+        },
+        {
+          id: "storm-risk",
+          label:
+            "Operational risk remains elevated while access and power disruptions continue.",
           tone: "amber",
         },
       ];
@@ -409,6 +729,11 @@ function getDecisionEvidence(incidentType?: string): DecisionEvidence[] {
 }
 
 export function createIncidentState(stage: IncidentStage, incidentType?: string): IncidentState {
+  const progressByStage = getProgressByStage(incidentType);
+  const confidenceByStage = getConfidenceByStage(incidentType);
+  const incidentRadiusByStage = getIncidentRadiusByStage(incidentType);
+  const decisionMetrics = getDecisionMetrics(incidentType);
+
   const routeVisible = stage === "traffic" || stage === "simulation" || stage === "decision" || stage === "completed";
   const simulationReady = stage === "decision" || stage === "completed";
   const decisionReady = stage === "decision" || stage === "completed";

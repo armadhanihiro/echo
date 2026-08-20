@@ -23,6 +23,9 @@ export type IncidentAnswerContext = {
   severity: string | null;
   status: string | null;
   location: string | null;
+  description: string | null;
+  resourceCount: number | null;
+  recommendation: string | null;
 };
 
 function buildGroundedPrompt(question: string, sources: CortexSearchResult[], incident: IncidentAnswerContext | null): string {
@@ -32,8 +35,7 @@ function buildGroundedPrompt(question: string, sources: CortexSearchResult[], in
       DOC_ID: ${source.DOC_ID}
       TITLE: ${source.TITLE}
       DOC_TYPE: ${source.DOC_TYPE}
-      CONTENT:
-      ${source.CONTENT}
+      CONTENT: ${source.CONTENT}
     `,
   ).join("\n---\n");
 
@@ -47,6 +49,9 @@ function buildGroundedPrompt(question: string, sources: CortexSearchResult[], in
       SEVERITY: ${incident.severity ?? "Unknown"}
       STATUS: ${incident.status ?? "Unknown"}
       LOCATION: ${incident.location ?? "Unknown"}
+      DESCRIPTION: ${incident.description ?? "Unknown"}
+      RESOURCE COUNT: ${incident.resourceCount ?? "Unknown"}
+      CURRENT RECOMMENDATION: ${incident.recommendation ?? "Unknown"}
     `
   : 
     `
@@ -81,6 +86,78 @@ function buildGroundedPrompt(question: string, sources: CortexSearchResult[], in
     `.trim();
 }
 
+function getIncidentRetrievalHints(incidentType: string | null): string[] {
+  switch (incidentType) {
+    case "FIRE":
+      return [
+        "bushfire response",
+        "evacuation",
+        "fire spread",
+        "firefighting resources",
+        "road access",
+        "community warning",
+      ];
+
+    case "FLOOD":
+      return [
+        "flood response",
+        "flood evacuation",
+        "swift water rescue",
+        "river level",
+        "road closure",
+        "community isolation",
+        "SES response",
+      ];
+
+    case "HAZMAT":
+      return [
+        "hazardous materials response",
+        "chemical spill",
+        "exclusion zone",
+        "decontamination",
+        "plume dispersion",
+        "responder PPE",
+      ];
+
+    case "COLLISION":
+      return [
+        "multi-vehicle collision",
+        "road rescue",
+        "casualty triage",
+        "ambulance coordination",
+        "traffic control",
+        "extrication",
+      ];
+
+    case "STORM":
+      return [
+        "severe storm response",
+        "damaged properties",
+        "fallen trees",
+        "power infrastructure",
+        "road access",
+        "community safety",
+      ];
+
+    case "EARTHQUAKE":
+      return [
+        "earthquake response",
+        "building collapse",
+        "search and rescue",
+        "structural safety",
+        "mass casualty response",
+      ];
+
+    default:
+      return [
+        "emergency response",
+        "incident command",
+        "resource deployment",
+        "public safety",
+      ];
+  }
+}
+
 export async function generateGroundedAnswer(question: string, incident: IncidentAnswerContext | null): Promise<GroundedAnswerResult> {
   const retrievalQuery = incident
     ? [
@@ -88,6 +165,7 @@ export async function generateGroundedAnswer(question: string, incident: Inciden
         incident.type,
         incident.title,
         incident.location,
+        ...getIncidentRetrievalHints(incident.type),
       ]
         .filter(Boolean)
         .join(" ")

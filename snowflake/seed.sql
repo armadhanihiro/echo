@@ -43,14 +43,14 @@ SELECT * FROM (
   UNION ALL SELECT
     'INC-004', 'Severe Storm Damage – Mount Barker',
     'Supercell thunderstorm causing significant structural damage in Mount Barker township. Multiple trees down across roads, power outages affecting 3,200 premises. SES receiving high volume of requests.',
-    'MEDIUM', 'ACTIVE', 'OTHER',
+    'MEDIUM', 'ACTIVE', 'STORM',
     -35.0687, 138.8590, 'Mount Barker, SA',
     '2026-07-19T01:20:00+10:30'::TIMESTAMP_TZ, NULL,
     PARSE_JSON('{"wind_gust_kmh": 110, "hail_size_cm": 4, "power_outages": 3200, "trees_down": 28, "buildings_damaged": 12, "roads_blocked": 7}')
   UNION ALL SELECT
     'INC-005', 'Multi-Vehicle Collision – South Eastern Freeway',
     'Chain-reaction collision involving 6 vehicles including a fuel tanker near the Crafers interchange. 3 critical injuries, fuel leak contained. Freeway closed in both directions.',
-    'CRITICAL', 'CONTAINED', 'MEDICAL',
+    'CRITICAL', 'CONTAINED', 'COLLISION',
     '2026-07-19T07:42:00+10:30'::TIMESTAMP_TZ AS reported_at,
     -35.0194, 138.7102, 'South Eastern Freeway, Crafers SA',
     '2026-07-19T07:42:00+10:30'::TIMESTAMP_TZ, NULL,

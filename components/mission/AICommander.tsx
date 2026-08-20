@@ -43,6 +43,7 @@ const iconByAgentId = {
   risk: ShieldAlert,
 } as const;
 
+
 function getStatusIcon(status: AgentStatus) {
   if (status === "completed") {
     return <CheckCircle2 size={16} className="text-emerald-300" />;
@@ -68,10 +69,53 @@ function getResourceIcon(resourceType: string) {
   }
 }
 
+function getConfidenceColor(confidence: number) {
+  if (confidence >= 90) {
+    return {
+      text: "text-emerald-300",
+      bar: "bg-emerald-400",
+    };
+  }
+
+  if (confidence >= 75) {
+    return {
+      text: "text-cyan-300",
+      bar: "bg-cyan-400",
+    };
+  }
+
+  if (confidence >= 60) {
+    return {
+      text: "text-amber-300",
+      bar: "bg-amber-400",
+    };
+  }
+
+  return {
+    text: "text-red-300",
+    bar: "bg-red-400",
+  };
+}
+
+function getResourceStatusClasses(status: string) {
+  switch (status) {
+    case "DEPLOYED":
+      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+
+    case "AVAILABLE":
+      return "border-cyan-500/30 bg-cyan-500/10 text-cyan-300";
+
+    case "MAINTENANCE":
+      return "border-amber-500/30 bg-amber-500/10 text-amber-300";
+
+    default:
+      return "border-slate-700 bg-slate-800/60 text-slate-300";
+  }
+}
+
 export function AICommander({ agents, confidence, recommendation, decisionReady, resources, resourcesLoading = false }: AICommanderProps) {
-  const hasStarted = agents.some(
-    (agent) => agent.status !== "waiting",
-  );
+  const hasStarted = agents.some((agent) => agent.status !== "waiting");
+  const confidenceColors = getConfidenceColor(confidence);
 
   return (
     <section className="rounded-2xl border border-cyan-500/20 bg-[#131C2E] p-6 shadow-[0_0_40px_rgba(6,182,212,0.06)]">
@@ -108,14 +152,14 @@ export function AICommander({ agents, confidence, recommendation, decisionReady,
         <div className="flex items-center justify-between text-sm">
           <span className="text-slate-400">System Confidence</span>
 
-          <span className="font-semibold text-emerald-300">
+          <span className={`font-semibold ${confidenceColors.text}`}>
             {confidence.toFixed(1)}%
           </span>
         </div>
 
         <div className="mt-3 h-2 rounded-full bg-slate-800">
           <div
-            className="h-2 rounded-full bg-emerald-400 transition-all duration-700"
+            className={`h-2 rounded-full transition-all duration-700 ${confidenceColors.bar}`}
             style={{ width: `${confidence}%` }}
           />
         </div>
@@ -206,7 +250,7 @@ export function AICommander({ agents, confidence, recommendation, decisionReady,
                   </div>
 
                   <div className="text-right">
-                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase text-emerald-300">
+                    <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase ${getResourceStatusClasses(resource.status)}`}>
                       {resource.status}
                     </span>
 
