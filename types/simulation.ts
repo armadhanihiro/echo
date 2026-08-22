@@ -117,12 +117,12 @@ export function getDefaultSimulationParameters(incidentType: string | undefined)
     case "COLLISION":
       return {
         incidentType: "COLLISION",
-        casualtyCount: 18,
+        casualtyCount: 8,
         availableAmbulances: 7,
         rescueUnits: 4,
         roadAccess: "RESTRICTED",
       };
-
+      
     case "STORM":
       return {
         incidentType: "STORM",

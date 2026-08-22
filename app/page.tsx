@@ -5,6 +5,7 @@ import { TopNavigation } from "@/components/layout/TopNavigation";
 import { AICommander } from "@/components/mission/AICommander";
 import { DecisionIntelligence } from "@/components/mission/DecisionIntelligence";
 import { DecisionSimulation } from "@/components/mission/DecisionSimulation";
+import { OperationalLog, type OperationalLogItem } from "@/components/mission/OperationalLog";
 import { MapPanel } from "@/components/mission/MapPanel";
 import { Timeline } from "@/components/mission/Timeline";
 import { AskEcho } from "@/components/mission/AskEcho";
@@ -15,13 +16,11 @@ import { useIncidents } from "@/hooks/useIncidents";
 import { useIncidentIntelligence } from "@/hooks/useIncidentIntelligence";
 
 import type { DecisionScenario, DecisionMetric } from "@/types/incident";
-import {
-  getDefaultSimulationParameters,
-  type SimulationParameters,
-} from "@/types/simulation";
+import { getDefaultSimulationParameters, type SimulationParameters } from "@/types/simulation";
 
 import { resimulateScenarios } from "@/lib/simulation/engine";
 import type { SimulationScenarioDto } from "@/lib/api/intelligence";
+import { incidentFlow, type IncidentStage } from "@/lib/incident-engine";
 
 
 
@@ -142,6 +141,46 @@ function getIncidentTimeZoneLabel(locationName: string | null | undefined): stri
   return "ACST";
 }
 
+function getOperationalRouteCopy(incidentType: string | undefined) {
+  switch (incidentType) {
+    case "FIRE":
+      return {
+        title: "Evacuation route confirmed",
+        description: "Evacuation corridor has been assessed and confirmed for response operations.",
+      };
+
+    case "FLOOD":
+      return {
+        title: "Safe access route confirmed",
+        description: "Flood-safe access corridor has been assessed and confirmed for response operations.",
+      };
+
+    case "HAZMAT":
+      return {
+        title: "Exclusion perimeter confirmed",
+        description: "Hazard exclusion perimeter and controlled access route have been confirmed.",
+      };
+
+    case "COLLISION":
+      return {
+        title: "Emergency access route confirmed",
+        description: "Emergency access corridor has been assessed and confirmed for rescue operations.",
+      };
+
+    case "STORM":
+      return {
+        title: "Storm response corridor confirmed",
+        description: "Storm response corridor has been assessed and confirmed for field operations.",
+      };
+
+    default:
+      return {
+        title: "Response corridor confirmed",
+        description: "Operational access corridor has been assessed and confirmed.",
+      };
+  }
+}
+
 export default function HomePage() {
   const {
     incidents,
@@ -222,6 +261,26 @@ export default function HomePage() {
       ]
     : incidentState.decisionEvidence;
 
+  function handleSearchIncident(query: string) {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (!normalizedQuery) return;
+
+    const match = incidents.find((incident) => {
+      return (
+        incident.title.toLowerCase().includes(normalizedQuery) ||
+        incident.type.toLowerCase().includes(normalizedQuery) ||
+        incident.locationName ?.toLowerCase().includes(normalizedQuery)
+      );
+    });
+
+    if (!match) return;
+
+    if (match.id === selectedIncident?.id) return;
+
+    handleSelectIncident(match.id);
+  }
+
   function handleSelectIncident(incidentId: string) {
     const incident = incidents.find((item) => item.id === incidentId);
 
@@ -242,6 +301,80 @@ export default function HomePage() {
 
   const deployedResources = activeIntelligence?.resources ?? [];
   const dashboardLoading = incidentsLoading || intelligenceLoading;
+
+  const stageIndex = incidentFlow.indexOf(stage);
+  const hasReachedStage = (targetStage: IncidentStage) => stageIndex >= incidentFlow.indexOf(targetStage);
+
+  const operationalRouteCopy = getOperationalRouteCopy(selectedIncident?.type);
+  const operationalLogItems: OperationalLogItem[] = [
+    ...(hasReachedStage("medical")
+      ? deployedResources.slice(0, 1).map((resource) => ({
+          id: `resource-${resource.id}`,
+          type: "RESOURCE" as const,
+          time: "Active",
+          title: `${resource.name} deployed`,
+          description: `${resource.type} allocated to the active incident.`,
+        }))
+      : []),
+
+    ...(hasReachedStage("traffic")
+      ? deployedResources.slice(1, 2).map((resource) => ({
+          id: `resource-${resource.id}`,
+          type: "RESOURCE" as const,
+          time: "Active",
+          title: `${resource.name} deployed`,
+          description: `${resource.type} allocated to the active incident.`,
+        }))
+      : []),
+
+    ...(hasReachedStage("traffic") && incidentState.routeVisible
+      ? [
+          {
+            id: "route-confirmed",
+            type: "ROUTE" as const,
+            time: "Active",
+            title: operationalRouteCopy.title,
+            description: operationalRouteCopy.description,
+          },
+        ]
+      : []),
+
+    ...(hasReachedStage("simulation")
+      ? deployedResources.slice(2).map((resource) => ({
+          id: `resource-${resource.id}`,
+          type: "RESOURCE" as const,
+          time: "Active",
+          title: `${resource.name} deployed`,
+          description: `${resource.type} allocated to the active incident.`,
+        }))
+      : []),
+
+    ...(hasReachedStage("simulation") && simulationReady
+      ? [
+          {
+            id: "simulation-ready",
+            type: "SIMULATION" as const,
+            time: "Ready",
+            title: "Response scenarios generated",
+            description: `${displayedScenarios.length} response strategies are available for operational comparison.`,
+          },
+        ]
+      : []),
+
+    ...(hasReachedStage("decision") && decisionReady
+      ? [
+          {
+            id: "decision-ready",
+            type: "DECISION" as const,
+            time: "Ready",
+            title: "Command decision ready",
+            description:
+              recommendedAction ||
+              "Recommended operational action is ready for commander review.",
+          },
+        ]
+      : []),
+  ];
 
   function handleStartIncident() {
     if (!selectedIncident || dashboardLoading) return;
@@ -313,6 +446,7 @@ export default function HomePage() {
             stage={stage}
             isRunning={isRunning}
             onStartIncident={handleStartIncident}
+            onSearchIncident={handleSearchIncident}
             disabled={dashboardLoading || !selectedIncident}
           />
 
@@ -351,7 +485,7 @@ export default function HomePage() {
                   />
                 </div>
 
-                <div id="live-map" className="scroll-mt-6">
+                <div id="live-map" className="scroll-mt-6 space-y-4">
                   <MapPanel
                     incidentRadius={incidentState.incidentRadius}
                     routeVisible={incidentState.routeVisible}
@@ -365,6 +499,8 @@ export default function HomePage() {
                     metadata={selectedIncident?.metadata ?? null}
                     resources={deployedResources}
                   />
+
+                  <OperationalLog items={operationalLogItems} />
                 </div>
 
                 <AICommander

@@ -12,7 +12,7 @@ import {
   Wind,
 } from "lucide-react";
 import { Circle, MapContainer, Marker, Popup, Polyline, TileLayer, useMap } from "react-leaflet";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import L from "leaflet";
 
@@ -237,11 +237,17 @@ function getMetadataNumber(metadata: Record<string, unknown> | null, key: string
   return typeof value === "number" ? value : null;
 }
 
+function getMetadataString(metadata: Record<string, unknown> | null, key: string): string | null {
+  const value = metadata?.[key];
+
+  return typeof value === "string" ? value : null;
+}
+
 function getIncidentOperationalStats(incidentType: string, metadata: Record<string, unknown> | null) {
   switch (incidentType) {
     case "FIRE": {
       const windSpeed = getMetadataNumber(metadata, "wind_speed_kmh");
-      const structures = getMetadataNumber(metadata, "structures_threatened");
+      const structuresAtRisk = getMetadataNumber(metadata, "properties_at_risk") ?? getMetadataNumber(metadata, "structures_threatened");;
 
       return [
         {
@@ -251,8 +257,8 @@ function getIncidentOperationalStats(incidentType: string, metadata: Record<stri
           color: "text-cyan-300",
         },
         {
-          label: "Structures",
-          value: structures !== null ? structures.toLocaleString() : "N/A",
+          label: "At Risk",
+          value: structuresAtRisk !== null ? structuresAtRisk.toLocaleString() : "N/A",
           icon: Users,
           color: "text-violet-300",
         },
@@ -260,39 +266,48 @@ function getIncidentOperationalStats(incidentType: string, metadata: Record<stri
     }
 
     case "FLOOD": {
-      const properties = getMetadataNumber(metadata, "properties_affected");
-      const evacuated = getMetadataNumber(metadata, "residents_evacuated");
+      const riverLevel = getMetadataNumber(metadata, "river_level_m");
+      const rainfallIntensity = getMetadataNumber(metadata, "rainfall_intensity_mm_h");
+      const forecastPeak = getMetadataNumber(metadata, "forecast_peak_m");
 
       return [
         {
-          label: "Properties",
-          value: properties !== null ? properties.toLocaleString() : "N/A",
+          label: "River Level",
+          value: riverLevel !== null ? `${riverLevel} m` : "N/A",
           icon: Waves,
           color: "text-blue-300",
         },
-        {
-          label: "Evacuated",
-          value: evacuated !== null ? evacuated.toLocaleString() : "N/A",
-          icon: Users,
-          color: "text-violet-300",
-        },
+        rainfallIntensity !== null
+          ? {
+              label: "Rainfall",
+              value: `${rainfallIntensity} mm/h`,
+              icon: Wind,
+              color: "text-cyan-300",
+            }
+          : {
+              label: "Forecast Peak",
+              value: forecastPeak !== null ? `${forecastPeak} m` : "N/A",
+              icon: Waves,
+              color: "text-cyan-300",
+            },
       ];
     }
 
     case "HAZMAT": {
       const windSpeed = getMetadataNumber(metadata, "wind_speed_kmh");
-      const exclusionRadius = getMetadataNumber(metadata, "exclusion_radius_m");
+      const windDirection = getMetadataString(metadata, "wind_direction");
+      const exclusionZone = getMetadataNumber(metadata, "exclusion_zone_m");
 
       return [
         {
-          label: "Wind",
-          value: windSpeed !== null ? `${windSpeed} km/h` : "N/A",
+          label: windSpeed !== null ? "Wind Speed" : "Wind Direction",
+          value: windSpeed !== null ? `${windSpeed} km/h` : windDirection ?? "N/A",
           icon: Wind,
           color: "text-cyan-300",
         },
         {
           label: "Exclusion",
-          value: exclusionRadius !== null ? `${exclusionRadius} m` : "N/A",
+          value: exclusionZone !== null ? `${exclusionZone} m` : "N/A",
           icon: ShieldAlert,
           color: "text-yellow-300",
         },
@@ -301,7 +316,8 @@ function getIncidentOperationalStats(incidentType: string, metadata: Record<stri
 
     case "COLLISION": {
       const criticalInjuries = getMetadataNumber(metadata, "injuries_critical");
-      const casualties = getMetadataNumber(metadata, "casualty_count");
+      const minorInjuries = getMetadataNumber(metadata, "injuries_minor");
+      const totalCasualties = criticalInjuries !== null || minorInjuries !== null ? (criticalInjuries ?? 0) + (minorInjuries ?? 0) : null;
 
       return [
         {
@@ -312,7 +328,7 @@ function getIncidentOperationalStats(incidentType: string, metadata: Record<stri
         },
         {
           label: "Casualties",
-          value: casualties !== null ? casualties.toLocaleString() : "N/A",
+          value: totalCasualties !== null ? totalCasualties.toLocaleString() : "N/A",
           icon: Users,
           color: "text-violet-300",
         },
@@ -320,8 +336,8 @@ function getIncidentOperationalStats(incidentType: string, metadata: Record<stri
     }
 
     case "STORM": {
-      const windSpeed = getMetadataNumber(metadata, "wind_speed_kmh");
-      const properties = getMetadataNumber(metadata, "properties_affected");
+      const windSpeed = getMetadataNumber(metadata, "wind_speed_kmh") ?? getMetadataNumber(metadata, "wind_gust_kmh");
+      const properties = getMetadataNumber(metadata, "properties_affected") ?? getMetadataNumber(metadata, "buildings_damaged");
 
       return [
         {
@@ -357,6 +373,59 @@ function getIncidentOperationalStats(incidentType: string, metadata: Record<stri
   }
 }
 
+function getIncidentRoute(incidentType: string, center: [number, number]): [number, number][] {
+  const [lat, lng] = center;
+
+  switch (incidentType) {
+    case "FIRE":
+      return [
+        center,
+        [lat - 0.012, lng - 0.018],
+        [lat - 0.028, lng - 0.03],
+        [lat - 0.045, lng - 0.04],
+      ];
+
+    case "FLOOD":
+      return [
+        center,
+        [lat + 0.01, lng - 0.015],
+        [lat + 0.025, lng - 0.02],
+        [lat + 0.04, lng - 0.01],
+      ];
+
+    case "HAZMAT":
+      return [
+        center,
+        [lat - 0.008, lng + 0.012],
+        [lat - 0.018, lng + 0.022],
+        [lat - 0.03, lng + 0.028],
+      ];
+
+    case "COLLISION":
+      return [
+        center,
+        [lat + 0.006, lng + 0.014],
+        [lat + 0.012, lng + 0.03],
+        [lat + 0.018, lng + 0.045],
+      ];
+
+    case "STORM":
+      return [
+        center,
+        [lat - 0.01, lng + 0.015],
+        [lat - 0.02, lng + 0.005],
+        [lat - 0.035, lng - 0.012],
+      ];
+
+    default:
+      return [
+        center,
+        [lat - 0.02, lng - 0.015],
+        [lat - 0.04, lng - 0.03],
+      ];
+  }
+}
+
 export function MapPanelClient({ incidentRadius, routeVisible, decisionReady, latitude, longitude, incidentTitle, incidentType, severity, locationName, metadata, resources }: MapPanelProps) {
   const hasIncident = incidentRadius > 1800;
 
@@ -370,11 +439,11 @@ export function MapPanelClient({ incidentRadius, routeVisible, decisionReady, la
     [incidentType],
   );
 
-  const route: [number, number][] = [
-    center,
-    [center[0] - 0.02, center[1] - 0.015],
-    [center[0] - 0.04, center[1] - 0.03],
-  ];
+  const route = getIncidentRoute(incidentType, center);
+  const [showLayersMenu, setShowLayersMenu] = useState(false);
+  const [showIncidentZone, setShowIncidentZone] = useState(true);
+  const [showRoute, setShowRoute] = useState(true);
+  const [showResources, setShowResources] = useState(true);
 
   function getIncidentAppearance(type: string) {
     switch (type) {
@@ -454,10 +523,68 @@ export function MapPanelClient({ incidentRadius, routeVisible, decisionReady, la
             </p>
           </div>
 
-          <button className="flex items-center gap-2 rounded-xl border border-slate-700 bg-[#0B1220]/80 px-3 py-2 text-xs text-slate-300">
-            <Layers size={14} />
-            Layers
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() =>
+                setShowLayersMenu((current) => !current)
+              }
+              className="flex items-center gap-2 rounded-xl border border-slate-700 bg-[#0B1220]/80 px-3 py-2 text-xs text-slate-300 transition hover:border-cyan-500/40 hover:text-white"
+            >
+              <Layers size={14} />
+              Layers
+            </button>
+
+            {showLayersMenu && (
+              <div className="absolute right-0 top-11 z-[800] w-52 rounded-xl border border-slate-700 bg-[#131C2E] p-3 shadow-2xl">
+                <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  Map Layers
+                </p>
+
+                <label className="flex cursor-pointer items-center justify-between gap-3 py-2 text-xs text-slate-300">
+                  Incident Zone
+                  <input
+                    type="checkbox"
+                    checked={showIncidentZone}
+                    onChange={(event) =>
+                      setShowIncidentZone(
+                        event.target.checked,
+                      )
+                    }
+                    className="accent-cyan-400"
+                  />
+                </label>
+
+                <label className="flex cursor-pointer items-center justify-between gap-3 py-2 text-xs text-slate-300">
+                  Response Route
+                  <input
+                    type="checkbox"
+                    checked={showRoute}
+                    onChange={(event) =>
+                      setShowRoute(
+                        event.target.checked,
+                      )
+                    }
+                    className="accent-cyan-400"
+                  />
+                </label>
+
+                <label className="flex cursor-pointer items-center justify-between gap-3 py-2 text-xs text-slate-300">
+                  Resources
+                  <input
+                    type="checkbox"
+                    checked={showResources}
+                    onChange={(event) =>
+                      setShowResources(
+                        event.target.checked,
+                      )
+                    }
+                    className="accent-cyan-400"
+                  />
+                </label>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="mb-4 grid grid-cols-4 gap-3">
@@ -511,18 +638,20 @@ export function MapPanelClient({ incidentRadius, routeVisible, decisionReady, la
               url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
             />
 
-            <Circle
-              center={center}
-              radius={incidentRadius}
-              pathOptions={{
-                color: zoneAppearance.stroke,
-                fillColor: zoneAppearance.fill,
-                fillOpacity: hasIncident ? 0.24 : 0.08,
-                weight: 2,
-              }}
-            />
+            {showIncidentZone && (
+              <Circle
+                center={center}
+                radius={incidentRadius}
+                pathOptions={{
+                  color: zoneAppearance.stroke,
+                  fillColor: zoneAppearance.fill,
+                  fillOpacity: hasIncident ? 0.24 : 0.08,
+                  weight: 2,
+                }}
+              />
+            )}
 
-            {routeVisible  && (
+            {routeVisible  && showRoute && (
               <Polyline
                 positions={route}
                 pathOptions={{
@@ -544,7 +673,7 @@ export function MapPanelClient({ incidentRadius, routeVisible, decisionReady, la
               </Popup>
             </Marker>
 
-            {resources.map((resource) => {
+            {showResources && resources.map((resource) => {
               if (
                 resource.latitude === null ||
                 resource.longitude === null

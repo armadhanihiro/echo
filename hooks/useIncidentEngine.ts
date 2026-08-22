@@ -10,7 +10,24 @@ import type { TimelineEvent } from "@/types/incident";
 
 const STAGE_DURATION_MS = 2200;
 
-function formatTimelineTime(reportedAt: string, offsetMinutes: number): string {
+function getIncidentTimeZone(locationName: string | null | undefined): string {
+  if (!locationName) {
+    return "Australia/Adelaide";
+  }
+
+  if (
+    locationName.includes("New Zealand") ||
+    locationName.includes("Auckland") ||
+    locationName.includes("Canterbury") ||
+    locationName.includes("Christchurch")
+  ) {
+    return "Pacific/Auckland";
+  }
+
+  return "Australia/Adelaide";
+}
+
+function formatTimelineTime(reportedAt: string, offsetMinutes: number, timeZone: string): string {
   const date = new Date(reportedAt);
 
   if (Number.isNaN(date.getTime())) {
@@ -19,41 +36,51 @@ function formatTimelineTime(reportedAt: string, offsetMinutes: number): string {
 
   date.setMinutes(date.getMinutes() + offsetMinutes);
 
-  return date.toLocaleTimeString([], {
+  return new Intl.DateTimeFormat("en-AU", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-  });
+    timeZone,
+  }).format(date);
 }
 
 function buildTimelineForIncident(incident: IncidentDto | null): TimelineEvent[] {
   if (!incident) return [];
 
   const location = incident.locationName ?? "Unknown location";
+  const timeZone = getIncidentTimeZone(
+    incident.locationName,
+  );
   const times = {
     incident: formatTimelineTime(
       incident.reportedAt,
       0,
+      timeZone,
     ),
     weather: formatTimelineTime(
       incident.reportedAt,
       2,
+      timeZone,
     ),
     medical: formatTimelineTime(
       incident.reportedAt,
       4,
+      timeZone,
     ),
     traffic: formatTimelineTime(
       incident.reportedAt,
       6,
+      timeZone,
     ),
     simulation: formatTimelineTime(
       incident.reportedAt,
       8,
+      timeZone,
     ),
     decision: formatTimelineTime(
       incident.reportedAt,
       10,
+      timeZone,
     ),
   };
 

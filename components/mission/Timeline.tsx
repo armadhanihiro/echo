@@ -188,11 +188,11 @@ export function Timeline({ events, incidentTitle, incidentType, timeZoneLabel = 
                 <div className="min-w-0 flex-1 rounded-xl border border-slate-800 bg-[#1A2438] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-sm font-semibold text-white">
-                      {event.title} {timeZoneLabel}
+                      {event.title}
                     </h3>
 
                     <span className="text-xs text-slate-500">
-                      {event.time} ACST
+                      {event.time} {timeZoneLabel}
                     </span>
                   </div>
 
